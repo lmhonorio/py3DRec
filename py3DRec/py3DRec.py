@@ -2,97 +2,28 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-import Reconstruction
+#import Reconstruction
+from Reconstruction import *
 import Camera
 
-k = np.mat(([[ 683.39404297,    0.        ,  267.21336591], [   0.        ,  684.3449707 ,  218.56421036],  [   0.        ,    0.        ,    1.        ]]))
-
-pt = np.array([[ -50.0000 , 0.0000, 450.0000], 
-[ -50.0000 , 0.0000, 550.0000], 
-[ 50.0000 , 0.0000, 550.0000], 
-[ 50.0000 , 0.0000, 450.0000], 
-[ -50.0000 , 0.0000, 450.0000], 
-[ -50.0000 , 50.0000, 450.0000], 
-[ -50.0000 , 50.0000, 550.0000], 
-[ 50.0000 , 50.0000, 550.0000], 
-[ 50.0000 , 50.0000, 450.0000], 
-[ -50.0000 , 50.0000, 450.0000], 
-[ -25.0000 , 50.0000, 475.0000], 
-[ -25.0000 , 50.0000, 525.0000], 
-[ 25.0000 , 50.0000, 525.0000], 
-[ 25.0000 , 50.0000, 475.0000], 
-[ -25.0000 , 50.0000, 475.0000], 
-[ -25.0000 , 75.0000, 475.0000], 
-[ -25.0000 , 75.0000, 525.0000], 
-[ 25.0000 , 75.0000, 525.0000], 
-[ 25.0000 , 75.0000, 475.0000], 
-[ -25.0000 , 75.0000, 475.0000], 
-[ -23.7500 , 80.0000, 476.2500], 
-[ -23.7500 , 80.0000, 523.7500], 
-[ 23.7500 , 80.0000, 523.7500], 
-[ 23.7500 , 80.0000, 476.2500], 
-[ -23.7500 , 80.0000, 476.2500], 
-[ -22.5625 , 85.0000, 477.4375], 
-[ -22.5625 , 85.0000, 522.5625], 
-[ 22.5625 , 85.0000, 522.5625], 
-[ 22.5625 , 85.0000, 477.4375], 
-[ -22.5625 , 85.0000, 477.4375], 
-[ -21.4344 , 90.0000, 478.5656], 
-[ -21.4344 , 90.0000, 521.4344], 
-[ 21.4344 , 90.0000, 521.4344], 
-[ 21.4344 , 90.0000, 478.5656], 
-[ -21.4344 , 90.0000, 478.5656], 
-[ -20.3627 , 95.0000, 479.6373], 
-[ -20.3627 , 95.0000, 520.3627], 
-[ 20.3627 , 95.0000, 520.3627], 
-[ 20.3627 , 95.0000, 479.6373], 
-[ -20.3627 , 95.0000, 479.6373], 
-[ -19.3445 , 100.0000, 480.6555], 
-[ -19.3445 , 100.0000, 519.3445], 
-[ 19.3445 , 100.0000, 519.3445], 
-[ 19.3445 , 100.0000, 480.6555], 
-[ -19.3445 , 100.0000, 480.6555], 
-[ -18.3773 , 105.0000, 481.6227], 
-[ -18.3773 , 105.0000, 518.3773], 
-[ 18.3773 , 105.0000, 518.3773], 
-[ 18.3773 , 105.0000, 481.6227], 
-[ -18.3773 , 105.0000, 481.6227], 
-[ -17.4584 , 110.0000, 482.5416], 
-[ -17.4584 , 110.0000, 517.4584], 
-[ 17.4584 , 110.0000, 517.4584], 
-[ 17.4584 , 110.0000, 482.5416], 
-[ -17.4584 , 110.0000, 482.5416], 
-[ -16.5855 , 115.0000, 483.4145], 
-[ -16.5855 , 115.0000, 516.5855], 
-[ 16.5855 , 115.0000, 516.5855], 
-[ 16.5855 , 115.0000, 483.4145], 
-[ -16.5855 , 115.0000, 483.4145], 
-[ -15.7562 , 120.0000, 484.2438], 
-[ -15.7562 , 120.0000, 515.7562], 
-[ 15.7562 , 120.0000, 515.7562], 
-[ 15.7562 , 120.0000, 484.2438], 
-[ -15.7562 , 120.0000, 484.2438], 
-[ -14.9684 , 125.0000, 485.0316], 
-[ -14.9684 , 125.0000, 514.9684], 
-[ 14.9684 , 125.0000, 514.9684], 
-[ 14.9684 , 125.0000, 485.0316], 
-[ -14.9684 , 125.0000, 485.0316]])
 
 
+k = clsReconstruction.loadData('k_cam_hp.dat')
 
+pt =clsReconstruction.loadData('pt_test.dat')  
 
 pth = np.mat(np.hstack((pt,np.ones((len(pt),1)))))
 
+pp=1
+#myC1 = Camera.myCamera(k)
+#myC1.projectiveMatrix(np.mat([0,10,10]).transpose(),[0, 0, 0])
 
-myC1 = Camera.myCamera(k)
-myC1.projectiveMatrix(np.mat([0,10,10]).transpose(),[0, 0, 0])
-
-myC2 = Camera.myCamera(k)
-myC2.projectiveMatrix(np.mat([129.4095, 250.0000, 66.9873]).transpose(),[np.pi/6.0,-np.pi/12.0,0])
+#myC2 = Camera.myCamera(k)
+#myC2.projectiveMatrix(np.mat([129.4095, 250.0000, 66.9873]).transpose(),[np.pi/6.0,-np.pi/12.0,0])
 
 
-Xh_1 = np.mat(myC1.project(pth)).transpose()
-Xh_2 = np.mat(myC2.project(pth)).transpose()
+#Xh_1 = np.mat(myC1.project(pth)).transpose()
+#Xh_2 = np.mat(myC2.project(pth)).transpose()
 
 #Camera.myCamera.show3Dplot(pt)
 #Camera.myCamera.showProjectiveView(Xh_1,'-r')
@@ -105,21 +36,39 @@ Xh_2 = np.mat(myC2.project(pth)).transpose()
 #Camera.myCamera.showProjectiveView(xn_1,'-r')
 #Camera.myCamera.showProjectiveView(xn_2,'-b')
 
-Xp_1 = np.hstack((Xh_1[:,0], Xh_1[:,1]))
-Xp_2 = np.hstack((Xh_2[:,0], Xh_2[:,1]))
+#Xp_1 = np.hstack((Xh_1[:,0], Xh_1[:,1]))
+#Xp_2 = np.hstack((Xh_2[:,0], Xh_2[:,1]))
 
-#evaluate the essential Matrix (using the original points, not the normilized ones)
+
+
+myC1 = Camera.myCamera(k)
+myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+
+
+#retorna pontos correspondentes
+Xp_1, Xp_2 = clsReconstruction.getMathingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
+
+
+#evaluate the essential Matrix using the camera parameter(using the original points)
 E, mask0 = cv2.findEssentialMat(Xp_1,Xp_2,k,cv2.FM_RANSAC)
 
 #evaluate the fundamental matrix (using the normilized points)
-F, mask = cv2.findFundamentalMat(Xp_1,Xp_2,cv2.FM_RANSAC)	
-ki = np.linalg.inv(k)
+#F, mask = cv2.findFundamentalMat(Xp_1,Xp_2,cv2.FM_RANSAC)	
+#ki = np.linalg.inv(k)
 
 R1, R2, t = cv2.decomposeEssentialMat(E)
 
+
+
 retval, R, t, mask2 = cv2.recoverPose(E,Xp_1,Xp_2)
 
-Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xh_1.transpose()[:2],Xh_2.transpose()[:2])
+myC2 = Camera.myCamera(k)
+myC2.projectiveMatrix(np.mat(t),R)
+
+
+Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2])
+
+#Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xh_1.transpose()[:2],Xh_2.transpose()[:2])
 
 Xp_4D = Xp_4Dt.T
 
@@ -128,7 +77,14 @@ for i in range(0,len(Xp_4D)):
 
 Xp_3D = Xp_4D[:,0:3]
 
-Camera.myCamera.show3Dplot(Xp_3D)
+#Camera.myCamera.show3Dplot(Xp_3D)
 
-i = 1
+Xh_1 = np.mat(myC1.project(Xp_4D)).transpose()
+
+
+im = clsReconstruction.drawPoints(cv2.imread('b4.jpg'),Xh_1,'b')
+
+cv2.imshow("im",im)
+cv2.waitKey(0)
+
 #Reconstruction.clsReconstruction.matchingTests();

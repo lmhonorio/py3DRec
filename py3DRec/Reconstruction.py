@@ -1,11 +1,97 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
+from scipy import stats
 
 
 
 class clsReconstruction(object):
 	"""description of class"""
+
+	@staticmethod
+	def saveData(X,filename):
+		with open(filename,"wb") as f:
+			pickle.dump(X,f)
+
+
+
+	@staticmethod
+	def loadData(filename):
+		with open(filename,"rb") as f:
+			X = pickle.load(f)
+		return X
+
+
+	@staticmethod
+	def getMathingPoints(filename1,filename2,kmatrix):
+		im_1 = cv2.imread(filename1)
+		im_2 = cv2.imread(filename2)
+
+		k = clsReconstruction.loadData(kmatrix)
+
+		#convert to gray
+		im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
+		im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
+
+
+		#proceed with sparce feature matching
+		orb = cv2.ORB_create()
+		
+		kp_1, des_1 = orb.detectAndCompute(im_1,None)
+		kp_2, des_2 = orb.detectAndCompute(im_2,None)
+
+		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+		matches = bf.match(des_1,des_2)
+		
+		matches = sorted(matches, key = lambda x:x.distance)
+				
+		#select points to evaluate the fundamental matrix
+		Pts1 = []
+		Pts2 = []
+		Tg = []
+		dx = im_1.shape[1]
+
+		for i in matches:
+			p1 = kp_1[i.queryIdx].pt
+			p2 = kp_2[i.trainIdx].pt
+			Pts1.append(p1)
+			Pts2.append(p2)
+			tg = np.arctan2(p2[0] - p1[0],dx + p2[1] - p1[1])
+			Tg.append(tg)
+
+				#get the grid to project onto
+		x_grid = np.linspace(-np.pi/3, np.pi/3, 90)
+		vTg = np.array(Tg)
+		#evaluate the KDEpdf
+		kde_pdf = stats.gaussian_kde(vTg).evaluate(x_grid)
+		xmax = x_grid[kde_pdf.argmax()]
+
+
+		newMaches = matches[0:50]
+		newMaches = sorted(newMaches, key = lambda x: np.arctan2( kp_2[x.trainIdx].pt[0] - kp_1[x.queryIdx].pt[0],dx +  kp_2[x.trainIdx].pt[1] - kp_1[x.queryIdx].pt[1]))
+
+		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
+					matchesMask = None,
+					flags = 0)
+
+		
+		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,newMaches[1:30], None, **draw_params)
+		plt.imshow(im_3)
+		plt.show()
+
+		pts1 = []
+		pts2 = []
+		idx =  newMaches[1:20]
+
+		for i in idx:
+			pts1.append(kp_1[i.queryIdx].pt)
+			pts2.append(kp_2[i.trainIdx].pt)
+
+		return np.array(pts1), np.array(pts2)
+
+	
 
 
 	@staticmethod
@@ -13,8 +99,9 @@ class clsReconstruction(object):
 		im_1 = cv2.imread('c1.bmp')
 		im_2 = cv2.imread('c2.bmp')
 
-		k = np.mat(([[ 683.39404297,    0.        ,  267.21336591], [   0.        ,  684.3449707 ,  218.56421036],  [   0.        ,    0.        ,    1.        ]]))
+		#k = np.mat(([[ 683.39404297,    0.        ,  267.21336591], [   0.        ,  684.3449707 ,  218.56421036],  [   0.        ,    0.        ,    1.        ]]))
 
+		k = clsReconstruction.loadData('k_cam_hp.dat')
 		#resise, if it is necessary
 		#im_1 = cv2.resize(im_1,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
 		#im_2 = cv2.resize(im_2,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
@@ -132,7 +219,13 @@ class clsReconstruction(object):
 		return img1,img2		
 		
 		
-		
+	@staticmethod	
+	def drawPoints(img1,pts1,color):
+		''' img1 - image on which we draw the epilines for the points in img2
+		lines - corresponding epilines '''
+		for pt1 in pts1:
+			img1 = cv2.circle(img1,(int(pt1[0,0]), int(pt1[0,1])),5,(250,250,50),4,2)
+		return img1			
 		
 		
 		

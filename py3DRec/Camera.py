@@ -23,7 +23,11 @@ class myCamera(object):
 	
 	def projectiveMatrix(self,t,r):
 		t = np.mat(t)
-		R = np.mat(myCamera.rotationQxyz(r))
+		if np.array(r).ndim == 1:
+			R = np.mat(myCamera.rotationQxyz(r))
+		else:
+			R = np.mat(r)
+
 		M = np.hstack((R,-R*t))
 		M = np.mat(np.vstack((M,[0, 0, 0, 1])))
 		I = np.mat(np.hstack((np.diag([1,1,1]),[[0],[0],[0]])))
@@ -83,7 +87,7 @@ class myCamera(object):
 	def show3Dplot(x):
 		fig = plt.figure()
 		ax = Axes3D(fig)
-		ax.plot(xs=x[:,2], ys=x[:,0], zs=x[:,1], zdir='z', label='zdir=z')
+		ax.scatter(xs=x[:,2], ys=x[:,0], zs=x[:,1], zdir='z', label='zdir=z')
 		plt.show()
 		pass
 
