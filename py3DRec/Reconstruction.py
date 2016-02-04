@@ -69,17 +69,23 @@ class clsReconstruction(object):
 		xmax = x_grid[kde_pdf.argmax()]
 
 
+
 		newMaches = matches[0:50]
 		newMaches = sorted(newMaches, key = lambda x: np.arctan2( kp_2[x.trainIdx].pt[0] - kp_1[x.queryIdx].pt[0],dx +  kp_2[x.trainIdx].pt[1] - kp_1[x.queryIdx].pt[1]))
 
 		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
 					matchesMask = None,
 					flags = 0)
-
 		
-		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,newMaches[1:30], None, **draw_params)
+		
+		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,newMaches[1:60], None, **draw_params)
 		plt.imshow(im_3)
 		plt.show()
+
+		plt.figure()
+		plt.plot(x_grid,kde_pdf)
+		plt.show()
+		
 
 		pts1 = []
 		pts2 = []
@@ -91,6 +97,131 @@ class clsReconstruction(object):
 
 		return np.array(pts1), np.array(pts2)
 
+	@staticmethod
+	def sparceRecostructionTestCase():
+
+		k = clsReconstruction.loadData('k_cam_hp.dat')
+
+		pt =clsReconstruction.loadData('pt_test.dat')  
+
+		pth = np.mat(np.hstack((pt,np.ones((len(pt),1)))))
+
+		myC1 = Camera.myCamera(k)
+		myC1.projectiveMatrix(np.mat([0,10,10]).transpose(),[0, 0, 0])
+
+		myC2 = Camera.myCamera(k)
+		myC2.projectiveMatrix(np.mat([129.4095, 250.0000, 66.9873]).transpose(),[np.pi/6.0,-np.pi/12.0,0])
+
+
+		Xh_1 = np.mat(myC1.project(pth)).transpose()
+		Xh_2 = np.mat(myC2.project(pth)).transpose()
+
+		#PLOT IF YOU WHAT TO VISUALIZE THE POINTS IN SPACE AND IN PROJECTIVE VIEWS OF CAMERAS 1 AND 2
+		#Camera.myCamera.show3Dplot(pt)
+		#Camera.myCamera.showProjectiveView(Xh_1,'-r')
+		#Camera.myCamera.showProjectiveView(Xh_2,'-b')
+
+		Xp_1 = np.hstack((Xh_1[:,0], Xh_1[:,1]))
+		Xp_2 = np.hstack((Xh_2[:,0], Xh_2[:,1]))
+
+
+
+		myC1 = Camera.myCamera(k)
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+
+
+		#retorna pontos correspondentes
+		Xp_1, Xp_2 = clsReconstruction.getMathingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
+
+
+		#evaluate the essential Matrix using the camera parameter(using the original points)
+		E, mask0 = cv2.findEssentialMat(Xp_1,Xp_2,k,cv2.FM_RANSAC)
+
+		#evaluate the fundamental matrix (using the normilized points)
+		#F, mask = cv2.findFundamentalMat(Xp_1,Xp_2,cv2.FM_RANSAC)	
+		#ki = np.linalg.inv(k)
+
+		#R1, R2, t = cv2.decomposeEssentialMat(E)
+ 
+
+		retval, R, t, mask2 = cv2.recoverPose(E,Xp_1,Xp_2)
+
+		myC2 = Camera.myCamera(k)
+		myC2.projectiveMatrix(np.mat(t),R)
+
+
+		Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2])
+
+		#Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xh_1.transpose()[:2],Xh_2.transpose()[:2])
+
+		Xp_4D = Xp_4Dt.T
+
+		for i in range(0,len(Xp_4D)):
+			Xp_4D[i] /= Xp_4D[i,3]
+
+		Xp_3D = Xp_4D[:,0:3]
+
+		Camera.myCamera.show3Dplot(Xp_3D)
+
+		Xh_1 = np.mat(myC1.project(Xp_4D)).transpose()
+
+
+		im = clsReconstruction.drawPoints(cv2.imread('b4.jpg'),Xh_1,'b')
+
+		cv2.imshow("im",im)
+		cv2.waitKey(0)
+
+
+
+	@staticmethod
+	def sparceRecostructionTrueCase():
+		k = clsReconstruction.loadData('k_cam_hp.dat')
+
+		myC1 = Camera.myCamera(k)
+		myC2 = Camera.myCamera(k)
+
+		#place camera 1 at origin
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+
+
+		#retorna pontos correspondentes
+		Xp_1, Xp_2 = clsReconstruction.getMathingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
+
+
+		#evaluate the essential Matrix using the camera parameter(using the original points)
+		E, mask0 = cv2.findEssentialMat(Xp_1,Xp_2,k,cv2.FM_RANSAC)
+
+
+		#retrive R and t from E
+		retval, R, t, mask2 = cv2.recoverPose(E,Xp_1,Xp_2)
+
+		#place camera 2
+		myC2.projectiveMatrix(np.mat(t),R)
+
+		#triangulate points
+		Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2])
+
+		Xp_4D = Xp_4Dt.T
+
+		#make them homogeneous
+		for i in range(0,len(Xp_4D)):
+			Xp_4D[i] /= Xp_4D[i,3]
+
+		#capture the 3D part
+		Xp_3D = Xp_4D[:,0:3]
+
+		#plot 3d points
+		Camera.myCamera.show3Dplot(Xp_3D)
+
+		#now we are going to test if the 3D points are acurate in space, by reprojecting them
+		#into the perspective plane of camera 1 ** it is possible to do the same to camera 2
+		Xh_1 = np.mat(myC1.project(Xp_4D)).transpose()
+
+
+		im = clsReconstruction.drawPoints(cv2.imread('b4.jpg'),Xh_1,'b')
+
+		cv2.imshow("im",im)
+		cv2.waitKey(0)
 	
 
 
@@ -200,6 +331,97 @@ class clsReconstruction(object):
 
 		plt.show()
 
+
+	#=======================================
+	@staticmethod
+	def NewMatching(): 
+		im_1 = cv2.imread('b4.jpg')
+		im_2 = cv2.imread('b5.jpg')
+
+		#im_1 = cv2.resize(im_1,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
+		#im_2 = cv2.resize(im_2,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
+
+		im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
+		im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
+		#cv2.imshow('trilho',im_1)
+
+		orb = cv2.ORB_create()
+		fast = cv2.FastFeatureDetector_create()
+
+		kp_1, des_1 = orb.detectAndCompute(im_1,None)
+		kp_2, des_2 = orb.detectAndCompute(im_2,None)
+
+		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+		matches = bf.match(des_1,des_2)
+		
+		matches = sorted(matches, key = lambda x:x.distance)
+
+		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
+							matchesMask = None,
+							flags = 0)
+
+		indice = 5
+		img3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:60], None, **draw_params)
+		ipt1 = matches[indice].queryIdx
+		pt1 = kp_1[ipt1]
+		ip1 = (int(pt1.pt[0]), int(pt1.pt[1]))
+		ipt2 = matches[indice].trainIdx
+		pt2 = kp_2[ipt2]
+		ip2 = (int(pt2.pt[0]), int(pt2.pt[1]))
+
+		delta = 40
+		cut1 = im_1[ip1[1]-delta:ip1[1]+delta,ip1[0]-delta:ip1[0]+delta] 
+		cut2 = im_2[ip2[1]-delta:ip2[1]+delta,ip2[0]-delta:ip2[0]+delta] 
+
+		kp_c1, des_c1 = orb.detectAndCompute(cut1,None)
+		kp_c2, des_c2 = orb.detectAndCompute(cut1,None)
+
+		ncmatches = bf.match(des_c1,des_c2)
+		ncmatches = sorted(ncmatches, key = lambda x:x.distance)
+		img5 = cv2.drawMatches(cut1,kp_c1,cut1,kp_c2,ncmatches, None, **draw_params)
+		plt.imshow(img5)
+		plt.show()
+		#calculo da entropia = baixa entropia significa pouca informacao para casar as imagens
+		#areas com baixa entropia ou deverao ser ignoradas ou entram com pouco peso e os pixels
+		#serao interpolados linearmente, mas sem peso no processo de homografia
+		#pp = np.cov(cut1)
+		#a,b = np.linalg.eig(pp)
+
+		#pp2 = np.cov(cut2)
+		#aa,bb = np.linalg.eig(pp2)
+		
+
+
+		#aqui visualiza os pontos capturados nas imagens
+		cv2.circle(im_1,(int(pt1.pt[0]), int(pt1.pt[1])),int(4),(250,250,250),4,2)
+		cv2.circle(im_2,(int(pt2.pt[0]), int(pt2.pt[1])),int(4),(250,50,250),4,2)
+
+
+		#cv2.imshow('compilado',img3)
+		#cv2.imshow('pt1',im_1)
+		#cv2.imshow('pt2',im_2)
+		#cv2.waitKey(0)
+		#plt.figure()
+		#plt.imshow(img3)
+		#plt.show()
+		#cv2.imshow('trilho',im)
+
+		#plt.imshow(cv2.cvtColor(cut1,cv2.COLOR_GRAY2RGB))
+		plt.figure(1)
+		clsReconstruction.doSubPlot(plt,221,im_1, cv2.COLOR_GRAY2RGB, 'original 1')
+		clsReconstruction.doSubPlot(plt,222,im_2, cv2.COLOR_GRAY2RGB, 'original 2')
+		clsReconstruction.doSubPlot(plt,223,cut1, cv2.COLOR_GRAY2RGB, 'parte 1')
+		clsReconstruction.doSubPlot(plt,224,cut2, cv2.COLOR_GRAY2RGB, 'parte 2')
+		plt.show()
+
+		#kp = fast.detect(im)
+		#im2 = cv2.drawKeypoints(im_1, kp_1, im2, color=(255,0,0))
+		#cv2.imshow('trilho22',im2)
+		#cv2.imshow('trilho3',im2)
+		cv2.waitKey(0)
+
+
 			
 	
 	@staticmethod	
@@ -227,7 +449,14 @@ class clsReconstruction(object):
 			img1 = cv2.circle(img1,(int(pt1[0,0]), int(pt1[0,1])),5,(250,250,50),4,2)
 		return img1			
 		
-		
+	#=======================================
+	def doSubPlot(plt, position, img, color_argument, title):
+		try:
+			plt.subplot(position),plt.imshow(cv2.cvtColor(img, color_argument)),plt.title(title)
+			plt.xticks([]), plt.yticks([])
+		except:
+			pass
+		return plt		
 		
 		
 		
