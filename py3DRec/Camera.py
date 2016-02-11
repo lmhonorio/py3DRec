@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from scipy import linalg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -130,8 +131,7 @@ class myCamera(object):
 	def project(self,X):
 		""" Project points in X (4*n array) and normalize coordinates. """
 		x = np.dot(self.P,X.T)
-		for i in range(3):
-			x[i] /= x[2]
+		x = cv2.convertPointsFromHomogeneous(x.T)
 
 		return x
 	

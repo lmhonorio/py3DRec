@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy import stats
 
+import Camera
+
 
 
 class clsReconstruction(object):
@@ -23,79 +25,113 @@ class clsReconstruction(object):
 		return X
 
 
+
+
 	@staticmethod
-	def getMathingPoints(filename1,filename2,kmatrix):
-		im_1 = cv2.imread(filename1)
-		im_2 = cv2.imread(filename2)
+	def getMathingPoints(file1,file2,kdef,npoints):
+		im_1 = cv2.imread(file1,0)
+		im_2 = cv2.imread(file2,0)
 
-		k = clsReconstruction.loadData(kmatrix)
+		##convert to gray
+		#im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
+		#im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
 
-		#convert to gray
-		im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
-		im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
+		k = clsReconstruction.loadData(kdef)
+
+		return clsReconstruction.getMatchingPointsFromObjects(im_1,im_2,k,npoints)
 
 
+
+
+
+	@staticmethod
+	def getMatchingPointsFromObjects(image1,image2,kmatrix,npoints):
+		im_1 = image1
+		im_2 = image2
+		k = kmatrix
+		  
 		#proceed with sparce feature matching
 		orb = cv2.ORB_create()
-		
 		kp_1, des_1 = orb.detectAndCompute(im_1,None)
 		kp_2, des_2 = orb.detectAndCompute(im_2,None)
-
 		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
 		matches = bf.match(des_1,des_2)
-		
+
 		matches = sorted(matches, key = lambda x:x.distance)
+
+		#surf = cv2.xfeatures2d.SURF_create()
+		#kp_1, des_1 = surf.detectAndCompute(im_1,None)
+		#kp_2, des_2 = surf.detectAndCompute(im_2,None)
+
+		#bf = cv2.BFMatcher()
+		#matches = bf.knnMatch(des_1,des_2,k=2)
+		#good = []
+		#for m,n in matches:
+		#	if m.distance < 0.4*n.distance:
+		#		good.append([m])
+
+		#img3 = cv2.drawMatchesKnn(im_1,kp_1,im_2,kp_2,good,im_1,flags=2)
+
+		#plt.imshow(img3),plt.show()
+
+		
+
 				
-		#select points to evaluate the fundamental matrix
-		Pts1 = []
-		Pts2 = []
-		Tg = []
-		dx = im_1.shape[1]
+		##select points to evaluate the fundamental matrix
+		#Pts1 = []
+		#Pts2 = []
+		#Tg = []
+		#dx = im_1.shape[1]
 
-		for i in matches:
-			p1 = kp_1[i.queryIdx].pt
-			p2 = kp_2[i.trainIdx].pt
-			Pts1.append(p1)
-			Pts2.append(p2)
-			tg = np.arctan2(p2[0] - p1[0],dx + p2[1] - p1[1])
-			Tg.append(tg)
+		#for i in matches:
+		#	p1 = kp_1[i.queryIdx].pt
+		#	p2 = kp_2[i.trainIdx].pt
+		#	Pts1.append(p1)
+		#	Pts2.append(p2)
+		#	tg = np.arctan2(p2[0] - p1[0],dx + p2[1] - p1[1])
+		#	Tg.append(tg)
 
-				#get the grid to project onto
-		x_grid = np.linspace(-np.pi/3, np.pi/3, 90)
-		vTg = np.array(Tg)
-		#evaluate the KDEpdf
-		kde_pdf = stats.gaussian_kde(vTg).evaluate(x_grid)
-		xmax = x_grid[kde_pdf.argmax()]
+		#		#get the grid to project onto
+		#x_grid = np.linspace(-np.pi/3, np.pi/3, 90)
+		#vTg = np.array(Tg)
+		##evaluate the KDEpdf
+		#kde_pdf = stats.gaussian_kde(vTg).evaluate(x_grid)
+		#xmax = x_grid[kde_pdf.argmax()]
 
 
 
-		newMaches = matches[0:50]
-		newMaches = sorted(newMaches, key = lambda x: np.arctan2( kp_2[x.trainIdx].pt[0] - kp_1[x.queryIdx].pt[0],dx +  kp_2[x.trainIdx].pt[1] - kp_1[x.queryIdx].pt[1]))
+		matches = matches[0:npoints]
+		#matches = sorted(newMaches, key = lambda x: np.arctan2( kp_2[x.trainIdx].pt[0] - kp_1[x.queryIdx].pt[0],dx +  kp_2[x.trainIdx].pt[1] - kp_1[x.queryIdx].pt[1]))
 
 		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
 					matchesMask = None,
 					flags = 0)
 		
 		
-		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,newMaches[1:60], None, **draw_params)
+		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
 		plt.imshow(im_3)
 		plt.show()
 
-		plt.figure()
-		plt.plot(x_grid,kde_pdf)
-		plt.show()
+		#plt.figure()
+		#plt.plot(x_grid,kde_pdf)
+		#plt.show()
 		
 
 		pts1 = []
 		pts2 = []
-		idx =  newMaches[1:20]
+		idx =  matches[1:npoints]
 
 		for i in idx:
 			pts1.append(kp_1[i.queryIdx].pt)
 			pts2.append(kp_2[i.trainIdx].pt)
 
 		return np.array(pts1), np.array(pts2)
+
+
+
+
+
+
 
 	@staticmethod
 	def sparceRecostructionTestCase():
@@ -174,8 +210,12 @@ class clsReconstruction(object):
 
 
 	@staticmethod
-	def sparceRecostructionTrueCase():
-		k = clsReconstruction.loadData('k_cam_hp.dat')
+	def sparceRecostructionTrueCase(file1,file2,kdef):
+		k = np.mat(clsReconstruction.loadData(kdef))
+		ki = np.linalg.inv(k)
+
+		im_1 = cv2.imread(file1)
+		im_2 = cv2.imread(file2)
 
 		myC1 = Camera.myCamera(k)
 		myC2 = Camera.myCamera(k)
@@ -185,44 +225,87 @@ class clsReconstruction(object):
 
 
 		#retorna pontos correspondentes
-		Xp_1, Xp_2 = clsReconstruction.getMathingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
-
+		Xp_1, Xp_2 = clsReconstruction.getMathingPoints(file1,file2,kdef,30)
 
 		#evaluate the essential Matrix using the camera parameter(using the original points)
 		E, mask0 = cv2.findEssentialMat(Xp_1,Xp_2,k,cv2.FM_RANSAC)
 
+		#evaluate Fundamental to get the epipolar lines
+		#F, mask = cv2.findFundamentalMat(Xp_1,Xp_2,cv2.FM_RANSAC)	
+		F = ki.T*np.mat(E)*ki
 
+
+		#implement the optimal triangulation method to correct matching placement- MVG page 318
+		Xp_1, Xp_2 = cv2.correctMatches(F,np.array([Xp_1]),np.array([Xp_2]))
+		Xp_1 = Xp_1.reshape(-1,2)
+		Xp_2 = Xp_2.reshape(-1,2)
+
+		 
 		#retrive R and t from E
 		retval, R, t, mask2 = cv2.recoverPose(E,Xp_1,Xp_2)
-
+		
 		#place camera 2
 		myC2.projectiveMatrix(np.mat(t),R)
 
+
+		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,F,im_1,im_2)
+
 		#triangulate points
-		Xp_4Dt = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2])
+		Xp_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
 
-		Xp_4D = Xp_4Dt.T
 
-		#make them homogeneous
-		for i in range(0,len(Xp_4D)):
-			Xp_4D[i] /= Xp_4D[i,3]
-
-		#capture the 3D part
-		Xp_3D = Xp_4D[:,0:3]
+		#make them euclidian
+		Xp_3D = cv2.convertPointsFromHomogeneous(Xp_4D).reshape(-1,3)
 
 		#plot 3d points
-		Camera.myCamera.show3Dplot(Xp_3D)
+		#Camera.myCamera.show3Dplot(Xp_3D)
 
 		#now we are going to test if the 3D points are acurate in space, by reprojecting them
-		#into the perspective plane of camera 1 ** it is possible to do the same to camera 2
-		Xh_1 = np.mat(myC1.project(Xp_4D)).transpose()
+		#into the perspective plane of camera 1 and camera 2
+		rXp_1 = np.mat(myC1.project(Xp_4D))
+		rXp_2 = np.mat(myC2.project(Xp_4D))
+		res_1 = Xp_1 - rXp_1
+		res_2 = Xp_2 - rXp_2
+
+		#(Res_1,Res_2) = clsReconstruction.reProjectResidual(Xp_4D,Xp_1,Xp_2, myC1.K, myC2.R, myC2.t)
+
+		im = clsReconstruction.drawPoints(cv2.imread(file1),Xh_1,'b')
+
+		#cv2.imshow("im",im)
+		#cv2.waitKey(0)
 
 
-		im = clsReconstruction.drawPoints(cv2.imread('b4.jpg'),Xh_1,'b')
 
-		cv2.imshow("im",im)
-		cv2.waitKey(0)
-	
+	@staticmethod
+	def reProjectResidual(Xpoints,Xp_1, Xp_2, k, R, t):
+
+		myC1 = Camera.myCamera(k)
+		myC2 = Camera.myCamera(k)
+
+		#place camera 1 at origin
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+		myC2.projectiveMatrix(np.mat(t),R)
+		r0 = [0,0,0];
+		t0 = [0,0,0];
+
+		x1 = np.dot(myC1.P,Xpoints.T)
+		for i in range(3):
+			x1[i] /= x1[2]
+		x1 = np.mat(x1.T[:,0:2])
+
+		x2 = np.dot(myC2.P,Xpoints.T)
+		for i in range(3):
+			x2[i] /= x2[2]
+		x2 = np.mat(x2.T[:,0:2])
+
+		Xr1 = Xp_1 - x1
+		Xr2 = Xp_2 - x2
+
+		Res_1 = np.linalg.norm(Xr1,axis = 1)
+		Res_2 = np.linalg.norm(Xr2,axis = 1)
+		
+
+		return Res_1, Res_2
 
 
 	@staticmethod
@@ -334,54 +417,53 @@ class clsReconstruction(object):
 
 	#=======================================
 	@staticmethod
-	def NewMatching(): 
-		im_1 = cv2.imread('b4.jpg')
-		im_2 = cv2.imread('b5.jpg')
+	def NewMatching(file1, file2, kdef): 
 
-		#im_1 = cv2.resize(im_1,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
-		#im_2 = cv2.resize(im_2,None,fx=0.3, fy=0.3, interpolation = cv2.INTER_CUBIC)
+		k = np.mat(clsReconstruction.loadData(kdef))
+		ki = np.linalg.inv(k)
+		im_1 = cv2.imread(file1,0)
+		im_2 = cv2.imread(file2,0)
 
-		im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
-		im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
-		#cv2.imshow('trilho',im_1)
+		Xp_1, Xp_2 = clsReconstruction.getMatchingPointsFromObjects(im_1,im_2,k)
 
-		orb = cv2.ORB_create()
-		fast = cv2.FastFeatureDetector_create()
+		d1 = 120
+		d2 = 120
+		indc = 1;
+		idy1 = (max(0,int(Xp_1[indc][1])-d1), min(int(Xp_1[indc][1])+d1,im_1.shape[1]))
+		idx1 = (max(0,int(Xp_1[indc][0])-d1), min(int(Xp_1[indc][0])+d1,im_1.shape[0]))
+		idy2 = (max(0,int(Xp_2[indc][1])-d2), min(int(Xp_2[indc][1])+d2,im_2.shape[1]))
+		idx2 = (max(0,int(Xp_2[indc][0])-d2), min(int(Xp_2[indc][0])+d2,im_2.shape[0]))
 
-		kp_1, des_1 = orb.detectAndCompute(im_1,None)
-		kp_2, des_2 = orb.detectAndCompute(im_2,None)
+		cut_1 = im_1[idy1[0]:idy1[1],idx1[0]:idx1[1]] 
+		cut_2 = im_2[idy2[0]:idy2[1],idx2[0]:idx2[1]] 
 
-		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+		#plt.figure()
+		#clsReconstruction.doSubPlot(plt,121,cut_1, cv2.COLOR_GRAY2RGB, 'cut 1') 
+		#clsReconstruction.doSubPlot(plt,122,cut_2, cv2.COLOR_GRAY2RGB, 'cut 2')
+		#plt.show()
 
-		matches = bf.match(des_1,des_2)
+		Xcp_1, Xcp_2 = clsReconstruction.getMatchingPointsFromObjects(cut_1,cut_2,k)
+		M, mask = cv2.findHomography(Xcp_1, Xcp_2, cv2.RANSAC,5.0)
+
 		
-		matches = sorted(matches, key = lambda x:x.distance)
 
-		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
-							matchesMask = None,
-							flags = 0)
+		if M is not None:
+			result = cv2.warpPerspective(cut_1, M, (cut_2.shape[1] + cut_2.shape[1], im_2.shape[0]))
+			erro = cut_2 - cut_2
+			erro[0:cut_2.shape[0], 0:cut_2.shape[1]] = result[0:cut_2.shape[0], 0:cut_2.shape[1]] - cut_2
+			result[0:cut_2.shape[0], 0:cut_2.shape[1]] = cut_2
+			clsReconstruction.doSubPlot(plt,121,erro, cv2.COLOR_GRAY2RGB, 'parte 1')
+			clsReconstruction.doSubPlot(plt,121,result, cv2.COLOR_GRAY2RGB, 'parte 1')
+			plt.show()
 
-		indice = 5
-		img3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:60], None, **draw_params)
-		ipt1 = matches[indice].queryIdx
-		pt1 = kp_1[ipt1]
-		ip1 = (int(pt1.pt[0]), int(pt1.pt[1]))
-		ipt2 = matches[indice].trainIdx
-		pt2 = kp_2[ipt2]
-		ip2 = (int(pt2.pt[0]), int(pt2.pt[1]))
+		
 
-		delta = 40
-		cut1 = im_1[ip1[1]-delta:ip1[1]+delta,ip1[0]-delta:ip1[0]+delta] 
-		cut2 = im_2[ip2[1]-delta:ip2[1]+delta,ip2[0]-delta:ip2[0]+delta] 
+		
+	
+			 
 
-		kp_c1, des_c1 = orb.detectAndCompute(cut1,None)
-		kp_c2, des_c2 = orb.detectAndCompute(cut1,None)
+		matchesMask = mask.ravel().tolist()
 
-		ncmatches = bf.match(des_c1,des_c2)
-		ncmatches = sorted(ncmatches, key = lambda x:x.distance)
-		img5 = cv2.drawMatches(cut1,kp_c1,cut1,kp_c2,ncmatches, None, **draw_params)
-		plt.imshow(img5)
-		plt.show()
 		#calculo da entropia = baixa entropia significa pouca informacao para casar as imagens
 		#areas com baixa entropia ou deverao ser ignoradas ou entram com pouco peso e os pixels
 		#serao interpolados linearmente, mas sem peso no processo de homografia
@@ -411,8 +493,8 @@ class clsReconstruction(object):
 		plt.figure(1)
 		clsReconstruction.doSubPlot(plt,221,im_1, cv2.COLOR_GRAY2RGB, 'original 1')
 		clsReconstruction.doSubPlot(plt,222,im_2, cv2.COLOR_GRAY2RGB, 'original 2')
-		clsReconstruction.doSubPlot(plt,223,cut1, cv2.COLOR_GRAY2RGB, 'parte 1')
-		clsReconstruction.doSubPlot(plt,224,cut2, cv2.COLOR_GRAY2RGB, 'parte 2')
+		clsReconstruction.doSubPlot(plt,223,cut_1, cv2.COLOR_GRAY2RGB, 'parte 1')
+		clsReconstruction.doSubPlot(plt,224,cut_2, cv2.COLOR_GRAY2RGB, 'parte 2')
 		plt.show()
 
 		#kp = fast.detect(im)
@@ -422,23 +504,47 @@ class clsReconstruction(object):
 		cv2.waitKey(0)
 
 
-			
+	@staticmethod
+	def returnMatching(im_1,im_2, ndraw):
+		im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
+		im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
+		#cv2.imshow('trilho',im_1)
+
+		orb = cv2.ORB_create()
+		fast = cv2.FastFeatureDetector_create()
+
+		kp_1, des_1 = orb.detectAndCompute(im_1,None)
+		kp_2, des_2 = orb.detectAndCompute(im_2,None)
+
+		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+		matches = bf.match(des_1,des_2)
+		
+		matches = sorted(matches, key = lambda x:x.distance)
+
+		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
+							matchesMask = None,
+							flags = 0)
+		
+		img3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:ndraw], None, **draw_params)
+
+		return kp_1,kp_2, des_1, des_2, matches, img3
+
 	
 	@staticmethod	
-	def drawlines(img1,img2,lines,pts1,pts2):
+	def drawlines(img1,lines,pts1):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
-		r,c = img1.shape
-		img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
-		img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
-		for r,pt1,pt2 in zip(lines,pts1,pts2):
+		r,c,z = img1.shape
+		#img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
+		#img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
+		for r,pt1 in zip(lines,pts1):
 			color = tuple(np.random.randint(0,255,3).tolist())
 			x0,y0 = map(int, [0, -r[2]/r[1] ])
 			x1,y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
 			img1 = cv2.line(img1, (x0,y0), (x1,y1), color,1)
 			img1 = cv2.circle(img1,tuple((int(pt1[0]),int(pt1[1]))),5,color,-1)
-			img2 = cv2.circle(img2,tuple((int(pt2[0]),int(pt2[1]))),5,color,-1)
-		return img1,img2		
+		return img1		
 		
 		
 	@staticmethod	
@@ -460,6 +566,26 @@ class clsReconstruction(object):
 		
 		
 		
+
+	@staticmethod
+	def skew(v):
+		if len(v) == 4: v = v[:3]/v[3]
+		skv = np.roll(np.roll(np.diag(v.flatten()), 1, 1), -1, 0)
+		return skv - skv.T
+
+	@staticmethod
+	def drawEpipolarLines(Xp_1,Xp_2,F,im_1,im_2):
+		F = np.mat(F)
+		#get epipolar lines
+		lines1 = cv2.computeCorrespondEpilines(Xp_2.reshape(-1,1,2), 2,F)
+		lines1 = lines1.reshape(-1,3)
+		lines2 = cv2.computeCorrespondEpilines(Xp_1.reshape(-1,1,2), 1,F)
+		lines2 = lines2.reshape(-1,3)
+		img5 = clsReconstruction.drawlines(im_1,lines1,Xp_1)
+		img6 = clsReconstruction.drawlines(im_2,lines2,Xp_2)
+		plt.subplot(121),plt.imshow(img5)
+		plt.subplot(122),plt.imshow(img6)
+		plt.show()
 		
 		
 		

@@ -7,4 +7,7 @@ from Reconstruction import *
 import Camera
 
 
-clsReconstruction.NewMatching()
+
+clsReconstruction.sparceRecostructionTrueCase('b4.jpg','b5.jpg','k_cam_hp.dat')
+
+#clsReconstruction.NewMatching('b4.jpg','b5.jpg','k_cam_hp.dat')
