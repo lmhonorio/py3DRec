@@ -1,0 +1,17 @@
+run_module_suite
+np
+print_function
+_algorithm_2_2
+scipy
+_count_nonzero
+TestAlgorithm_2_2
+TestOnenormest
+absolute_import
+assert_allclose
+decorators
+division
+assert_
+_onenormest_core
+TestCase
+MatrixProductOperator
+assert_equal

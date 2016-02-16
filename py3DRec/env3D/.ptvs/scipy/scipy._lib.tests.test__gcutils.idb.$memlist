@@ -1,0 +1,10 @@
+test_set_gc_state
+set_gc_state
+test_gc_state
+ReferenceError
+raises
+gc_state
+test_assert_deallocated
+gc
+assert_equal
+assert_deallocated

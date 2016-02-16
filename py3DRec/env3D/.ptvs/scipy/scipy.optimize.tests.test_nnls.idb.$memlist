@@ -1,0 +1,11 @@
+run_module_suite
+norm
+absolute_import
+TestCase
+arange
+division
+assert_
+print_function
+nnls
+dot
+TestNNLS

@@ -1,0 +1,7 @@
+namedtuple
+__all__
+distributions
+np
+linregress
+theilslopes
+_find_repeats

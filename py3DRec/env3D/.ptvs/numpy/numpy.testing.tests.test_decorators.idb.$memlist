@@ -1,0 +1,17 @@
+run_module_suite
+nose
+test_skip_generators_callable
+KnownFailureTest
+dec
+test_slow
+DidntSkipException
+absolute_import
+test_skip_generators_hardcoded
+print_function
+division
+assert_raises
+assert_
+test_setastest
+test_skip_functions_hardcoded
+test_deprecated
+test_skip_functions_callable

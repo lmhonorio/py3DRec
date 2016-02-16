@@ -1,0 +1,13 @@
+expit
+TestExpit
+NumpyVersion
+absolute_import
+TestCase
+np
+division
+print_function
+logit
+assert_allclose
+assert_equal
+assert_almost_equal
+TestLogit

@@ -1,0 +1,15 @@
+check_cont_fit
+distcont
+os
+absolute_import
+stats
+skip_fit
+np
+division
+thresh_min
+print_function
+fit_sizes
+test_cont_fit
+dec
+thresh_percent
+failing_fits

@@ -1,0 +1,14 @@
+itertools
+run_module_suite
+scipy
+knownfailure_overridable
+absolute_import
+threading
+slow
+np
+division
+TestGIL
+print_function
+time
+TestCase
+assert_equal

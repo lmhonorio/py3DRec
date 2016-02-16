@@ -1,0 +1,14 @@
+run_module_suite
+assert_
+TestSLSQP
+absolute_import
+TestCase
+np
+division
+assert_array_almost_equal
+print_function
+fmin_slsqp
+assert_equal
+assert_allclose
+MyCallBack
+minimize

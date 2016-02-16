@@ -1,0 +1,16 @@
+unicode_literals
+Artist
+YAxis
+XAxis
+SimpleChainedObjects
+Axes
+plt
+absolute_import
+SimpleAxisArtist
+print_function
+division
+maxes
+warnings
+six
+ax
+fig

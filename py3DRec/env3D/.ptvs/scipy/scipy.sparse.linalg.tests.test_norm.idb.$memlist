@@ -1,0 +1,15 @@
+assert_raises
+TestNorm
+scipy
+NumpyVersion
+absolute_import
+assert_allclose
+np
+division
+npnorm
+print_function
+spnorm
+dec
+TestCase
+assert_equal
+TestVsNumpyNorm

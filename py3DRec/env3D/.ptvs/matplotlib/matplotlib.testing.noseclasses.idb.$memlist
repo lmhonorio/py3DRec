@@ -1,0 +1,12 @@
+ErrorClass
+KnownFailureDidNotFailTest
+six
+os
+absolute_import
+unicode_literals
+division
+KnownFailure
+print_function
+ErrorClassPlugin
+ImageComparisonFailure
+KnownFailureTest

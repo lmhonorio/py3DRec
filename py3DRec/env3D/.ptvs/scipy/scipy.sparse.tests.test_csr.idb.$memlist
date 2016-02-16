@@ -1,0 +1,12 @@
+run_module_suite
+assert_
+test_csr_rowslice
+absolute_import
+np
+division
+assert_array_almost_equal
+print_function
+test_csr_getrow
+test_csr_getcol
+csr_matrix
+_check_csr_rowslice

@@ -1,0 +1,12 @@
+Tester
+scipy
+time
+TestCase
+rosen
+np
+rosen_hess
+_BenchOptimizers
+BenchSmoothUnbounded
+rosen_der
+defaultdict
+funcs

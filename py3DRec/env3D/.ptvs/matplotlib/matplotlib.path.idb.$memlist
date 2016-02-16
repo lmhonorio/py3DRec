@@ -1,0 +1,17 @@
+np
+unicode_literals
+_define_deprecated_functions
+simple_linear_interpolation
+maxdict
+six
+_path
+rcParams
+absolute_import
+print_function
+division
+get_paths_extents
+math
+get_path_collection_extents
+ma
+Path
+WeakValueDictionary

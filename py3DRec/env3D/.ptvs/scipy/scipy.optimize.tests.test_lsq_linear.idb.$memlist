@@ -1,0 +1,16 @@
+run_module_suite
+lstsq
+assert_allclose
+A
+TestBVLS
+b
+rand
+SparseMixin
+lsq_linear
+np
+BaseMixin
+aslinearoperator
+assert_raises
+assert_
+TestTRF
+assert_equal

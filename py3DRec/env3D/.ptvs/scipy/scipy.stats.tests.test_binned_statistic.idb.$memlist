@@ -1,0 +1,11 @@
+run_module_suite
+assert_array_almost_equal
+u
+absolute_import
+binned_statistic_dd
+np
+division
+binned_statistic
+print_function
+TestBinnedStatistic
+binned_statistic_2d

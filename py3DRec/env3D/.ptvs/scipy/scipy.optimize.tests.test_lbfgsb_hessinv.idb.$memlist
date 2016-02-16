@@ -1,0 +1,12 @@
+minimize
+run_module_suite
+scipy
+test_1
+absolute_import
+TestCase
+test_2
+np
+division
+assert_
+print_function
+assert_allclose
