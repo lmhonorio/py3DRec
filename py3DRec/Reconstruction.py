@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy as nL
+from scipy.optimize import leastsq
 import pickle
 from scipy import stats
-
+#from scipy.optimize import minimize
 import Camera
 
 
@@ -15,6 +17,7 @@ class clsReconstruction(object):
 	def saveData(X,filename):
 		with open(filename,"wb") as f:
 			pickle.dump(X,f)
+			
 
 
 
@@ -59,9 +62,26 @@ class clsReconstruction(object):
 
 		matches = sorted(matches, key = lambda x:x.distance)
 
-		#surf = cv2.xfeatures2d.SURF_create()
-		#kp_1, des_1 = surf.detectAndCompute(im_1,None)
-		#kp_2, des_2 = surf.detectAndCompute(im_2,None)
+	
+
+		#for dense matching... find keypoints and compute its descriptors
+		#kp_1 = orb.detect(im_1)
+		#des_1 = orb.compute(im_1,kp_1)
+		#step = 10
+		#keypoints = []
+		#for i in range(0,im_1.shape[0],step):
+		#	for j in range(0,im_2.shape[1],step):
+		#		pass
+
+
+		#sift = cv2.xfeatures2d.SIFT_create()
+		#sift.compute(
+
+		#dense=cv2.FeatureDetector_create('Dense')
+		
+		#freak = cv2.xfeatures2d.FREAK_create()
+		#kp_f1, des_f1 = freak.detectAndCompute(im_1,None)
+		#kp_f2, des_f2 = freak.detectAndCompute(im_2,None)
 
 		#bf = cv2.BFMatcher()
 		#matches = bf.knnMatch(des_1,des_2,k=2)
@@ -108,9 +128,9 @@ class clsReconstruction(object):
 					flags = 0)
 		
 		
-		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
-		plt.imshow(im_3)
-		plt.show()
+		#im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
+		#plt.imshow(im_3)
+		#plt.show()
 
 		#plt.figure()
 		#plt.plot(x_grid,kde_pdf)
@@ -251,23 +271,16 @@ class clsReconstruction(object):
 		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,F,im_1,im_2)
 
 		#triangulate points
-		Xp_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
-
+		Str_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
 
 		#make them euclidian
-		Xp_3D = cv2.convertPointsFromHomogeneous(Xp_4D).reshape(-1,3)
+		Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
 
 		#plot 3d points
-		#Camera.myCamera.show3Dplot(Xp_3D)
+		nR,nt, R0, R1 = clsReconstruction.bundleAdjustment(Str_4D,Xp_1,Xp_2,k,R,t)
 
-		#now we are going to test if the 3D points are acurate in space, by reprojecting them
-		#into the perspective plane of camera 1 and camera 2
-		rXp_1 = np.mat(myC1.project(Xp_4D))
-		rXp_2 = np.mat(myC2.project(Xp_4D))
-		res_1 = Xp_1 - rXp_1
-		res_2 = Xp_2 - rXp_2
+		print('valor anterior {0:.3f}, valor corrigido: {1:.3f} \n'.format(R0,R1))
 
-		#(Res_1,Res_2) = clsReconstruction.reProjectResidual(Xp_4D,Xp_1,Xp_2, myC1.K, myC2.R, myC2.t)
 
 		im = clsReconstruction.drawPoints(cv2.imread(file1),Xh_1,'b')
 
@@ -275,37 +288,61 @@ class clsReconstruction(object):
 		#cv2.waitKey(0)
 
 
+	@staticmethod
+	def bundleAdjustment(Str_4D, Xp_1, Xp_2, k, R, t):
+		#Camera.myCamera.show3Dplot(Xp_3D)
+		r_euclidian,jac  = cv2.Rodrigues(R)
+		x = np.vstack((r_euclidian,t)).reshape(-1)
+
+		Res = clsReconstruction.reProjectResidual(x, Str_4D, Xp_1, Xp_2, k)
+
+
+		p = nL.optimize.minimize(clsReconstruction.reProjectResidual,x, args = (Str_4D, Xp_1, Xp_2, k))
+		
+		nx = np.array(p.x)
+		
+		nRes = clsReconstruction.reProjectResidual(nx, Str_4D, Xp_1, Xp_2, k)
+
+		nR = cv2.Rodrigues(nx[0:3])
+		nt = np.array(nx[3:6]).reshape(3,1)
+
+		return nR,nt,Res,nRes
+
+
+
 
 	@staticmethod
-	def reProjectResidual(Xpoints,Xp_1, Xp_2, k, R, t):
+	def rosen(x):
+		"""The Rosenbrock function"""
+		return sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
 
+	@staticmethod
+	def reProjectResidual(x, *args):
+							
+		Str_4D = args[0]
+		Xp_1 = args[1]
+		Xp_2 = args[2]
+		k = args[3]
+
+		R = cv2.Rodrigues(x[0:3])
+		t = np.array(x[3:6]).reshape(3,1)
+		
 		myC1 = Camera.myCamera(k)
 		myC2 = Camera.myCamera(k)
-
-		#place camera 1 at origin
 		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
-		myC2.projectiveMatrix(np.mat(t),R)
-		r0 = [0,0,0];
-		t0 = [0,0,0];
+		myC2.projectiveMatrix(np.mat(t),R[0])
 
-		x1 = np.dot(myC1.P,Xpoints.T)
-		for i in range(3):
-			x1[i] /= x1[2]
-		x1 = np.mat(x1.T[:,0:2])
+		rXp_1 = np.mat(myC1.project(Str_4D))
+		rXp_2 = np.mat(myC2.project(Str_4D))
+		res_1 = Xp_1 - rXp_1
+		res_2 = Xp_2 - rXp_2
 
-		x2 = np.dot(myC2.P,Xpoints.T)
-		for i in range(3):
-			x2[i] /= x2[2]
-		x2 = np.mat(x2.T[:,0:2])
+		Res = np.hstack((res_1,res_2)).reshape(-1)
 
-		Xr1 = Xp_1 - x1
-		Xr2 = Xp_2 - x2
+		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
 
-		Res_1 = np.linalg.norm(Xr1,axis = 1)
-		Res_2 = np.linalg.norm(Xr2,axis = 1)
-		
 
-		return Res_1, Res_2
+		return nRes
 
 
 	@staticmethod
@@ -591,9 +628,61 @@ class clsReconstruction(object):
 		
 		
 		
+class clsBundleAdjustment(object):
+	
+	def __init__(self, *args):
+		self.Str_4D = args[0]
+		self.Xp_1 = args[1]
+		self.Xp_2 = args[2]
+		self.k = args[3]
+			
+		
+	
+	def reProjectResidual(self,x):
+							
+		Str_4D = self.Str_4D
+		Xp_1 = self.Xp_1
+		Xp_2 = self.Xp_2
+		k = self.k
+
+		R = cv2.Rodrigues(x[0:3])
+		t = np.array(x[3:6]).reshape(3,1)
+		
+		myC1 = Camera.myCamera(k)
+		myC2 = Camera.myCamera(k)
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+		myC2.projectiveMatrix(np.mat(t),R[0])
+
+		rXp_1 = np.mat(myC1.project(Str_4D))
+		rXp_2 = np.mat(myC2.project(Str_4D))
+		res_1 = Xp_1 - rXp_1
+		res_2 = Xp_2 - rXp_2
+
+		Res = np.hstack((res_1,res_2)).reshape(-1)
+
+		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
+
+
+		return nRes	
+	
+	
+	def bundleAdjustment(self,R, t):
+		#Camera.myCamera.show3Dplot(Xp_3D)
+		r_euclidian,jac  = cv2.Rodrigues(R)
+		x = np.vstack((r_euclidian,t)).reshape(-1)
+
+		Res = self.reProjectResidual(x)
+
+
+		p = nL.optimize.leastsq(self.reProjectResidual,x)
 		
 		
-		
+		i = 1
+	
+	
+	
+	
+	
 			
 		##for dense matching = not using right now
 		#ipt1 = matches[0].queryIdx
