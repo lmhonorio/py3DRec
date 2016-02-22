@@ -7,6 +7,7 @@ import pickle
 from scipy import stats
 #from scipy.optimize import minimize
 import Camera
+import time
 
 
 
@@ -31,14 +32,9 @@ class clsReconstruction(object):
 
 
 	@staticmethod
-	def getMathingPoints(file1,file2,kdef,npoints):
+	def getMatchingPoints(file1,file2,kdef,npoints):
 		im_1 = cv2.imread(file1,0)
 		im_2 = cv2.imread(file2,0)
-
-		##convert to gray
-		#im_1 = cv2.cvtColor(im_1, cv2.COLOR_BGR2GRAY)
-		#im_2 = cv2.cvtColor(im_2, cv2.COLOR_BGR2GRAY)
-
 		k = clsReconstruction.loadData(kdef)
 
 		return clsReconstruction.getMatchingPointsFromObjects(im_1,im_2,k,npoints)
@@ -52,19 +48,29 @@ class clsReconstruction(object):
 		im_1 = image1
 		im_2 = image2
 		k = kmatrix
-		  
+		 
+		
+		az = cv2.AKAZE_create()
+		kp_1, des_1 = az.detectAndCompute(im_1,None) 
+		kp_2, des_2 = az.detectAndCompute(im_2,None) 
+
 		#proceed with sparce feature matching
-		orb = cv2.ORB_create()
-		kp_1, des_1 = orb.detectAndCompute(im_1,None)
-		kp_2, des_2 = orb.detectAndCompute(im_2,None)
+		#orb = cv2.ORB_create()
+		#kp_1, des_1 = orb.detectAndCompute(im_1,None)
+		#kp_2, des_2 = orb.detectAndCompute(im_2,None)
+
+		#kp_1 = orb.detect(im_1)
+		#des_1 = orb.compute(im_1,kp_1)
+		#kp_2 = orb.detect(im_2)
+		#des_2 = orb.compute(im_2,kp_2)
+
+
 		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 		matches = bf.match(des_1,des_2)
 
 		matches = sorted(matches, key = lambda x:x.distance)
 
-	
-
-		#for dense matching... find keypoints and compute its descriptors
+		#for dense matching... find keypoints for each subwindow and compute its descriptors
 		#kp_1 = orb.detect(im_1)
 		#des_1 = orb.compute(im_1,kp_1)
 		#step = 10
@@ -72,70 +78,15 @@ class clsReconstruction(object):
 		#for i in range(0,im_1.shape[0],step):
 		#	for j in range(0,im_2.shape[1],step):
 		#		pass
-
-
-		#sift = cv2.xfeatures2d.SIFT_create()
-		#sift.compute(
-
-		#dense=cv2.FeatureDetector_create('Dense')
-		
-		#freak = cv2.xfeatures2d.FREAK_create()
-		#kp_f1, des_f1 = freak.detectAndCompute(im_1,None)
-		#kp_f2, des_f2 = freak.detectAndCompute(im_2,None)
-
-		#bf = cv2.BFMatcher()
-		#matches = bf.knnMatch(des_1,des_2,k=2)
-		#good = []
-		#for m,n in matches:
-		#	if m.distance < 0.4*n.distance:
-		#		good.append([m])
-
-		#img3 = cv2.drawMatchesKnn(im_1,kp_1,im_2,kp_2,good,im_1,flags=2)
-
-		#plt.imshow(img3),plt.show()
-
-		
-
-				
-		##select points to evaluate the fundamental matrix
-		#Pts1 = []
-		#Pts2 = []
-		#Tg = []
-		#dx = im_1.shape[1]
-
-		#for i in matches:
-		#	p1 = kp_1[i.queryIdx].pt
-		#	p2 = kp_2[i.trainIdx].pt
-		#	Pts1.append(p1)
-		#	Pts2.append(p2)
-		#	tg = np.arctan2(p2[0] - p1[0],dx + p2[1] - p1[1])
-		#	Tg.append(tg)
-
-		#		#get the grid to project onto
-		#x_grid = np.linspace(-np.pi/3, np.pi/3, 90)
-		#vTg = np.array(Tg)
-		##evaluate the KDEpdf
-		#kde_pdf = stats.gaussian_kde(vTg).evaluate(x_grid)
-		#xmax = x_grid[kde_pdf.argmax()]
-
-
-
+	
 		matches = matches[0:npoints]
-		#matches = sorted(newMaches, key = lambda x: np.arctan2( kp_2[x.trainIdx].pt[0] - kp_1[x.queryIdx].pt[0],dx +  kp_2[x.trainIdx].pt[1] - kp_1[x.queryIdx].pt[1]))
 
-		draw_params = dict(matchColor = (20,20,20), singlePointColor = (200,200,200),
-					matchesMask = None,
-					flags = 0)
-		
-		
+		#draw_params = dict(matchColor = (20,20,20), singlePointColor = (250,250,250),
+		#			matchesMask = None,
+		#			flags = 0)
 		#im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
 		#plt.imshow(im_3)
 		#plt.show()
-
-		#plt.figure()
-		#plt.plot(x_grid,kde_pdf)
-		#plt.show()
-		
 
 		pts1 = []
 		pts2 = []
@@ -187,7 +138,7 @@ class clsReconstruction(object):
 
 
 		#retorna pontos correspondentes
-		Xp_1, Xp_2 = clsReconstruction.getMathingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
+		Xp_1, Xp_2 = clsReconstruction.getMatchingPoints('b4.jpg','b5.jpg','k_cam_hp.dat')
 
 
 		#evaluate the essential Matrix using the camera parameter(using the original points)
@@ -231,11 +182,15 @@ class clsReconstruction(object):
 
 	@staticmethod
 	def sparceRecostructionTrueCase(file1,file2,kdef):
+
 		k = np.mat(clsReconstruction.loadData(kdef))
 		ki = np.linalg.inv(k)
 
 		im_1 = cv2.imread(file1)
 		im_2 = cv2.imread(file2)
+
+		im_b1 = cv2.cvtColor(im_1,cv2.COLOR_RGB2GRAY)
+		im_b2 = cv2.cvtColor(im_2,cv2.COLOR_RGB2GRAY)
 
 		myC1 = Camera.myCamera(k)
 		myC2 = Camera.myCamera(k)
@@ -244,22 +199,23 @@ class clsReconstruction(object):
 		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
 
 
-		#retorna pontos correspondentes
-		Xp_1, Xp_2 = clsReconstruction.getMathingPoints(file1,file2,kdef,30)
+		#return macthing points
+		Xp_1, Xp_2 = clsReconstruction.getMatchingPoints(file1,file2,kdef,30)
 
 		#evaluate the essential Matrix using the camera parameter(using the original points)
 		E, mask0 = cv2.findEssentialMat(Xp_1,Xp_2,k,cv2.FM_RANSAC)
 
 		#evaluate Fundamental to get the epipolar lines
-		#F, mask = cv2.findFundamentalMat(Xp_1,Xp_2,cv2.FM_RANSAC)	
+		#since we already know the camera intrincics, it is better to evaluate F from the correspondence rather than from the 8 points routine
 		F = ki.T*np.mat(E)*ki
 
 
 		#implement the optimal triangulation method to correct matching placement- MVG page 318
-		Xp_1, Xp_2 = cv2.correctMatches(F,np.array([Xp_1]),np.array([Xp_2]))
-		Xp_1 = Xp_1.reshape(-1,2)
-		Xp_2 = Xp_2.reshape(-1,2)
-
+		#Xp_1, Xp_2 = cv2.correctMatches(F,np.array([Xp_1]),np.array([Xp_2]))
+		#Xp_1 = Xp_1.reshape(-1,2)
+		#Xp_2 = Xp_2.reshape(-1,2)
+		Xh_org_1 = cv2.convertPointsToHomogeneous(Xp_1)
+		Xh_org_2 = cv2.convertPointsToHomogeneous(Xp_2)
 		 
 		#retrive R and t from E
 		retval, R, t, mask2 = cv2.recoverPose(E,Xp_1,Xp_2)
@@ -276,16 +232,136 @@ class clsReconstruction(object):
 		#make them euclidian
 		Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
 
-		#plot 3d points
-		nR,nt, R0, R1 = clsReconstruction.bundleAdjustment(Str_4D,Xp_1,Xp_2,k,R,t)
-
-		print('valor anterior {0:.3f}, valor corrigido: {1:.3f} \n'.format(R0,R1))
+		Xh_Rpo_1 = myC1.project(Str_4D)
+		Xh_Rpo_2 = myC2.project(Str_4D)
 
 
-		im = clsReconstruction.drawPoints(cv2.imread(file1),Xh_1,'b')
 
-		#cv2.imshow("im",im)
-		#cv2.waitKey(0)
+		#three ways to carry on the bundle adjustment; 
+		# 1 - getting just R and t - very fast but not very accurate
+		# 2 - almost all together, with R, t and X - here i missed K. however since the result is leads to an almost zero error, I will chance this latter.
+		# 3 - getting just R, t and adjusting the camera intrincics. 
+		#nR,nt, R0, R1 = clsReconstruction.bundleAdjustment(Str_4D,Xp_1,Xp_2,k,R,t)
+		#Str_4D, nR,nt, R0, R1 = clsReconstruction.bundleAdjustmentwithX(Str_4D,Xp_1,Xp_2,k,R,t)
+		nk, nR,nt, R0, R1 = clsReconstruction.bundleAdjustmentwithK(Str_4D,Xp_1,Xp_2,k,R,t)
+		print('old value {0:.3f}, optimized pose: {1:.3f} \n'.format(R0,R1))
+		nki = np.linalg.inv(nk)
+		nE = clsReconstruction.skew(nt)*np.mat(nR)
+		nF = nki.T*np.mat(nE)*nki
+		#if we use the 3th option, we should reinitiate the cameras	and the essential matrix
+		myC1 = Camera.myCamera(nk)
+		myC2 = Camera.myCamera(nk)
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+
+		#reevaluate all variables based on new values of nR and nt
+		myC2.projectiveMatrix(np.mat(nt),nR)
+		Str_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
+		Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
+		
+		#Camera.myCamera.show3Dplot(Str_3D)
+		Xh_Opt_1 = myC1.project(Str_4D)#.reshape(-1,2)
+		Xh_Opt_2 = myC2.project(Str_4D)#.reshape(-1,2)
+
+
+		#find residual bigger a threshould value (4)
+		error_1 = np.mat(Xh_Opt_1) - np.mat(Xp_1)
+		error_2 = np.mat(Xh_Opt_2) - np.mat(Xp_2)
+
+		r_erro1 = [ sum(np.array(val).reshape(-1)**2) for val in error_1]
+		r_erro2 = [ sum(np.array(val).reshape(-1)**2) for val in error_2]
+
+		rerrors = list(zip(r_erro1,r_erro2))
+
+		bad_error = [index for index, erro in enumerate(rerrors) if sum(erro) > 4]
+
+		bat_pts = Str_4D[bad_error]
+		test1 = np.mat(myC1.project(bat_pts)) - np.mat(Xp_1[bad_error])
+
+		#xStr_4D, R0, R1 = clsReconstruction.bundleAdjustmentwithX(bat_pts,Xp_1[bad_error],Xp_2[bad_error],nk,nR,nt)
+		#print('old value {0:.3f}, optimized pose: {1:.3f} \n'.format(R0,R1))
+		
+		#Str_4D[bad_error] = xStr_4D
+		#Xh_Opt2_1 = myC1.project(Str_4D)#.reshape(-1,2)
+		#Xh_Opt2_2 = myC2.project(Str_4D)#.reshape(-1,2)
+
+		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,nF,im_b1,im_b2)
+
+		im = cv2.imread(file1)
+		im = clsReconstruction.drawPoints(im,Xh_org_1,(50,50,250))
+		im = clsReconstruction.drawPoints(im,Xh_Rpo_1,(50,150,100))
+		im = clsReconstruction.drawPoints(im,Xh_Opt_1,(250,250,50))
+		#im = clsReconstruction.drawPoints(im,Xh_Opt2_1,(50,250,50))
+
+		im2 = cv2.imread(file2)
+		im2 = clsReconstruction.drawPoints(im2,Xh_org_2,(50,50,250))
+		im2 = clsReconstruction.drawPoints(im2,Xh_Rpo_2,(50,150,100))
+		im2 = clsReconstruction.drawPoints(im2,Xh_Opt_2,(250,250,50))
+		#im2 = clsReconstruction.drawPoints(im2,Xh_Opt2_2,(50,250,50))
+
+
+		cv2.imshow("im",im)
+		cv2.imshow("im2",im2)
+		cv2.waitKey(0)
+
+
+
+
+	@staticmethod
+	def bundleAdjustmentwithK(Str_4D, Xp_1, Xp_2, k, R, t):
+		#Camera.myCamera.show3Dplot(Xp_3D)
+		r_euclidian,jac  = cv2.Rodrigues(R)
+		x = np.vstack((r_euclidian,t)).reshape(-1)
+		kstack = np.array(k).reshape(-1)
+
+		Xstk = np.hstack((kstack[0:6],x)).reshape(-1)
+		
+
+		Res = clsReconstruction.reProjectResidualwithK(Xstk, Str_4D, Xp_1, Xp_2)
+
+		p = nL.optimize.minimize(clsReconstruction.reProjectResidualwithK,Xstk, args = (Str_4D, Xp_1, Xp_2))
+		
+		nx = np.array(p.x)
+		
+		nRes = clsReconstruction.reProjectResidualwithK(nx, Str_4D, Xp_1, Xp_2, k)
+
+		stackedK = nx[0:6]
+		nk = stackedK.reshape(2,3)
+		nk = np.vstack((nk,[0,0,1]))
+		x = nx[6:6+6]
+	
+
+		nR = cv2.Rodrigues(x[0:3])[0]
+		nt = np.array(x[3:6]).reshape(3,1)
+
+
+		return nk,nR,nt,Res,nRes
+
+
+
+
+
+	@staticmethod
+	def bundleAdjustmentwithX(Str_4D, Xp_1, Xp_2, k, R, t):
+
+		shp = Str_4D.shape
+		Xstk = Str_4D.reshape(-1)
+		#Xstk = np.hstack((xest,x)).reshape(-1)
+
+		Res = clsReconstruction.reProjectResidualwithX(Xstk, shp, Xp_1, Xp_2, k, R, t)
+
+
+		p = nL.optimize.minimize(clsReconstruction.reProjectResidualwithX,Xstk, args = (shp, Xp_1, Xp_2, k, R, t))
+		
+		nx = np.array(p.x)
+		
+		nRes = clsReconstruction.reProjectResidualwithX(nx, shp, Xp_1, Xp_2, k, R, t)
+
+		stackedx = nx[0:shp[0]*shp[1]]
+		Str_4D = stackedx.reshape(shp)
+
+
+		return Str_4D,Res,nRes
+
 
 
 	@staticmethod
@@ -296,14 +372,13 @@ class clsReconstruction(object):
 
 		Res = clsReconstruction.reProjectResidual(x, Str_4D, Xp_1, Xp_2, k)
 
-
 		p = nL.optimize.minimize(clsReconstruction.reProjectResidual,x, args = (Str_4D, Xp_1, Xp_2, k))
 		
 		nx = np.array(p.x)
 		
 		nRes = clsReconstruction.reProjectResidual(nx, Str_4D, Xp_1, Xp_2, k)
 
-		nR = cv2.Rodrigues(nx[0:3])
+		nR = cv2.Rodrigues(nx[0:3])[0]
 		nt = np.array(nx[3:6]).reshape(3,1)
 
 		return nR,nt,Res,nRes
@@ -315,6 +390,76 @@ class clsReconstruction(object):
 	def rosen(x):
 		"""The Rosenbrock function"""
 		return sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
+
+	@staticmethod
+	def reProjectResidualwithK(nx, *args):
+		
+		
+		Str_4D = args[0]
+		Xp_1 = args[1]
+		Xp_2 = args[2]
+
+		kstk = nx[0:6]
+		x = nx[6:9+6]
+
+		k = kstk.reshape(2,3)
+		k = np.vstack((k,[0,0,1]))
+
+		R = cv2.Rodrigues(x[0:3])
+		t = np.array(x[3:6]).reshape(3,1)
+		
+		myC1 = Camera.myCamera(k)
+		myC2 = Camera.myCamera(k)
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+		myC2.projectiveMatrix(np.mat(t),R[0])
+
+		rXp_1 = np.mat(myC1.project(Str_4D))
+		rXp_2 = np.mat(myC2.project(Str_4D))
+		res_1 = Xp_1 - rXp_1
+		res_2 = Xp_2 - rXp_2
+
+		Res = np.hstack((res_1,res_2)).reshape(-1)
+
+		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
+
+
+		return nRes
+
+
+	@staticmethod
+	def reProjectResidualwithX(nx, *args):
+		
+		shp = args[0]
+		Xp_1 = args[1]
+		Xp_2 = args[2]
+		k = args[3]
+		R = args[4]
+		t = args[5]
+
+		stackedx = nx[0:shp[0]*shp[1]]
+		#x = nx[shp[0]*shp[1]:shp[0]*shp[1]+6]
+
+		Str_4D = stackedx.reshape(shp)
+
+		#R = cv2.Rodrigues(x[0:3])
+		#t = np.array(x[3:6]).reshape(3,1)
+		
+		myC1 = Camera.myCamera(k)
+		myC2 = Camera.myCamera(k)
+		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
+		myC2.projectiveMatrix(np.mat(t),R[0])
+
+		rXp_1 = np.mat(myC1.project(Str_4D))
+		rXp_2 = np.mat(myC2.project(Str_4D))
+		res_1 = Xp_1 - rXp_1
+		res_2 = Xp_2 - rXp_2
+
+		Res = np.hstack((res_1,res_2)).reshape(-1)
+
+		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
+
+
+		return nRes
 
 	@staticmethod
 	def reProjectResidual(x, *args):
@@ -340,6 +485,7 @@ class clsReconstruction(object):
 		Res = np.hstack((res_1,res_2)).reshape(-1)
 
 		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
+		
 
 
 		return nRes
@@ -567,29 +713,30 @@ class clsReconstruction(object):
 
 		return kp_1,kp_2, des_1, des_2, matches, img3
 
-	
-	@staticmethod	
-	def drawlines(img1,lines,pts1):
+	def drawlines(img1,img2,lines,pts1,pts2):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
-		r,c,z = img1.shape
-		#img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
-		#img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
-		for r,pt1 in zip(lines,pts1):
+		r,c = img1.shape
+
+		img1 = cv2.cvtColor(img1,cv2.COLOR_GRAY2BGR)
+		img2 = cv2.cvtColor(img2,cv2.COLOR_GRAY2BGR)
+
+		for r,pt1,pt2 in zip(lines,pts1,pts2):
 			color = tuple(np.random.randint(0,255,3).tolist())
-			x0,y0 = map(int, [0, -r[2]/r[1] ])
-			x1,y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
-			img1 = cv2.line(img1, (x0,y0), (x1,y1), color,1)
+			x0,y0 = map(float, [0, -r[2]/r[1] ])
+			x1,y1 = map(float, [c, -(r[2]+r[0]*c)/r[1] ])
+			img1 = cv2.line(img1, (int(x0),int(y0)), (int(x1),int(y1)), color,1)
 			img1 = cv2.circle(img1,tuple((int(pt1[0]),int(pt1[1]))),5,color,-1)
-		return img1		
-		
+			img2 = cv2.circle(img2,tuple((int(pt2[0]),int(pt2[1]))),5,color,-1)
+		return img1,img2
+	
 		
 	@staticmethod	
 	def drawPoints(img1,pts1,color):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
 		for pt1 in pts1:
-			img1 = cv2.circle(img1,(int(pt1[0,0]), int(pt1[0,1])),5,(250,250,50),4,2)
+			img1 = cv2.circle(img1,(int(pt1[0,0]), int(pt1[0,1])),4,color,2,1)
 		return img1			
 		
 	#=======================================
@@ -608,7 +755,7 @@ class clsReconstruction(object):
 	def skew(v):
 		if len(v) == 4: v = v[:3]/v[3]
 		skv = np.roll(np.roll(np.diag(v.flatten()), 1, 1), -1, 0)
-		return skv - skv.T
+		return np.mat(skv - skv.T)
 
 	@staticmethod
 	def drawEpipolarLines(Xp_1,Xp_2,F,im_1,im_2):
@@ -616,71 +763,19 @@ class clsReconstruction(object):
 		#get epipolar lines
 		lines1 = cv2.computeCorrespondEpilines(Xp_2.reshape(-1,1,2), 2,F)
 		lines1 = lines1.reshape(-1,3)
+		img3,img4 = clsReconstruction.drawlines(im_1,im_2,lines1,Xp_1,Xp_2)
+
 		lines2 = cv2.computeCorrespondEpilines(Xp_1.reshape(-1,1,2), 1,F)
 		lines2 = lines2.reshape(-1,3)
-		img5 = clsReconstruction.drawlines(im_1,lines1,Xp_1)
-		img6 = clsReconstruction.drawlines(im_2,lines2,Xp_2)
-		plt.subplot(121),plt.imshow(img5)
-		plt.subplot(122),plt.imshow(img6)
+		img5, img6 = clsReconstruction.drawlines(im_2, im_1, lines2,Xp_2, Xp_1)
+
+		plt.subplot(121),plt.imshow(img3)
+		plt.subplot(122),plt.imshow(img5)
 		plt.show()
 		
 		
 		
-		
-		
-class clsBundleAdjustment(object):
-	
-	def __init__(self, *args):
-		self.Str_4D = args[0]
-		self.Xp_1 = args[1]
-		self.Xp_2 = args[2]
-		self.k = args[3]
-			
-		
-	
-	def reProjectResidual(self,x):
-							
-		Str_4D = self.Str_4D
-		Xp_1 = self.Xp_1
-		Xp_2 = self.Xp_2
-		k = self.k
 
-		R = cv2.Rodrigues(x[0:3])
-		t = np.array(x[3:6]).reshape(3,1)
-		
-		myC1 = Camera.myCamera(k)
-		myC2 = Camera.myCamera(k)
-		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
-		myC2.projectiveMatrix(np.mat(t),R[0])
-
-		rXp_1 = np.mat(myC1.project(Str_4D))
-		rXp_2 = np.mat(myC2.project(Str_4D))
-		res_1 = Xp_1 - rXp_1
-		res_2 = Xp_2 - rXp_2
-
-		Res = np.hstack((res_1,res_2)).reshape(-1)
-
-		nRes = 2*np.sqrt(np.sum(np.power(Res,2))/len(Res))
-
-
-		return nRes	
-	
-	
-	def bundleAdjustment(self,R, t):
-		#Camera.myCamera.show3Dplot(Xp_3D)
-		r_euclidian,jac  = cv2.Rodrigues(R)
-		x = np.vstack((r_euclidian,t)).reshape(-1)
-
-		Res = self.reProjectResidual(x)
-
-
-		p = nL.optimize.leastsq(self.reProjectResidual,x)
-		
-		
-		i = 1
-	
-	
-	
 	
 	
 			

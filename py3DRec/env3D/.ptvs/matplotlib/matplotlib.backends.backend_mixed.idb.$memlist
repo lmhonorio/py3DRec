@@ -1,9 +1,0 @@
-frombuffer
-six
-absolute_import
-unicode_literals
-division
-print_function
-RendererAgg
-MixedModeRenderer
-process_figure_for_rasterizing

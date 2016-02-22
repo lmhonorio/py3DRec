@@ -1,6 +1,0 @@
-assert_allclose
-lapack
-cython_lapack
-TestCase
-test_lamch
-run_module_suite

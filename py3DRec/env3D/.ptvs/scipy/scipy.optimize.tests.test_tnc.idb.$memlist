@@ -1,8 +1,0 @@
-run_module_suite
-assert_allclose
-TestCase
-np
-optimize
-TestTnc
-pow
-assert_equal
