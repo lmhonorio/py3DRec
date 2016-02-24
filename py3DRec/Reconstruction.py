@@ -221,6 +221,7 @@ class clsReconstruction(object):
 		
 		nx = np.array(p.x)
 		
+		
 		nRes = clsReconstruction.reProjectResidualwithK(nx, Str_4D, Xp_1, Xp_2, k)
 
 		stackedK = nx[0:9]
