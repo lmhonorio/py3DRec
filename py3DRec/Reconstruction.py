@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import scipy as nL
 from scipy.optimize import leastsq
 import pickle
-from scipy import stats
+#from scipy import stats
 #from scipy.optimize import minimize
 import Camera
 import time
@@ -14,6 +14,7 @@ import time
 class clsReconstruction(object):
 	"""description of class"""
 
+	#==========================================================
 	@staticmethod
 	def saveData(X,filename):
 		with open(filename,"wb") as f:
@@ -21,7 +22,7 @@ class clsReconstruction(object):
 			
 
 
-
+	#==========================================================
 	@staticmethod
 	def loadData(filename):
 		with open(filename,"rb") as f:
@@ -30,7 +31,7 @@ class clsReconstruction(object):
 
 
 
-
+	#==========================================================
 	@staticmethod
 	def getMatchingPoints(file1,file2,kdef,npoints):
 		im_1 = cv2.imread(file1,0)
@@ -42,23 +43,29 @@ class clsReconstruction(object):
 
 
 
-
+	#==========================================================
 	@staticmethod
 	def getMatchingPointsFromObjects(image1,image2,kmatrix,npoints):
 		im_1 = image1
 		im_2 = image2
 		k = kmatrix
 		 
-		
-		az = cv2.AKAZE_create()
-		kp_1, des_1 = az.detectAndCompute(im_1,None) 
-		kp_2, des_2 = az.detectAndCompute(im_2,None) 
+
 
 		#proceed with sparce feature matching
-		#orb = cv2.ORB_create()
-		#kp_1, des_1 = orb.detectAndCompute(im_1,None)
-		#kp_2, des_2 = orb.detectAndCompute(im_2,None)
+		#for different features, see 
+		#http://docs.opencv.org/3.0-beta/modules/features2d/doc/feature_detection_and_description.html
+		
+		detector = cv2.AKAZE_create()
 
+		#detector = cv2.BRISK_create()  
+
+
+		#detector = cv2.ORB_create()
+
+
+		kp_1, des_1 = detector.detectAndCompute(im_1,None) 
+		kp_2, des_2 = detector.detectAndCompute(im_2,None) 
 
 		bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 		matches = bf.match(des_1,des_2)
@@ -96,7 +103,7 @@ class clsReconstruction(object):
 
 
 
-
+	#==========================================================
 	@staticmethod
 	def sparceRecostructionTrueCase(file1,file2,kdef):
 
@@ -140,6 +147,7 @@ class clsReconstruction(object):
 
 		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,F,im_1,im_2)
 
+
 		#triangulate points
 		Str_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
 
@@ -147,25 +155,28 @@ class clsReconstruction(object):
 		#make them euclidian
 		Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
 
-		#find reprojection
+
+		#evaluate reprojection
 		Xh_Reprojection_1 = myC1.project(Str_4D)
 		Xh_Reprojection_2 = myC2.project(Str_4D)
 
 
-
-		#three ways to carry on the bundle adjustment; 
+		#three ways to carry on the bundle adjustment I am using R,t and K as parameters. using the points is too time 
+		# consuming although the results are much better; 
 		#nR,nt, R0, R1 = clsReconstruction.bundleAdjustment(Str_4D,Xp_1,Xp_2,k,R,t)
-		#Str_4D, nR,nt, R0, R1 = clsReconstruction.bundleAdjustmentwithX(Str_4D,Xp_1,Xp_2,k,R,t)
+		#Str_4D, nR,nt, R0, R1 = clsReconstruction.bundleAdjustmentwithX(Str_4D,Xp_1,Xp_2,k,R,t)	#### not working right now... 
 
-		nk, nR,nt, R0, R1 = clsReconstruction.bundleAdjustmentwithK(Str_4D,Xp_1,Xp_2,k,R,t)
+		nk, nR, nt, R0, R1 = clsReconstruction.bundleAdjustmentwithK(Str_4D,Xp_1,Xp_2,k,R,t)
 		print('old value {0:.3f}, optimized pose: {1:.3f} \n'.format(R0,R1))
 		nki = np.linalg.inv(nk)
 
+
+		#reevaluate essential and fundamental matrixes
 		nE = clsReconstruction.skew(nt)*np.mat(nR)
 		nF = nki.T*np.mat(nE)*nki
 
 
-		#if we use the 3th option, we should reinitiate the cameras	and the essential matrix
+		#if we use the 3th option, we should reinitiate the cameras	and the essential matrix, once the projective matrix will change
 		myC1 = Camera.myCamera(nk)
 		myC2 = Camera.myCamera(nk)
 		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
@@ -184,8 +195,7 @@ class clsReconstruction(object):
 		Xh_Opt_2 = myC2.project(Str_4D)#.reshape(-1,2)
 
 
-		#POSSIBLE IMPLEMENTATION find residuals bigger a threshould value and optimize their spacial location
-
+		#POSSIBLE IMPLEMENTATION find residuals bigger a threshould value and optimize their location in R3
 
 		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,nF,im_b1,im_b2)
 
@@ -204,7 +214,7 @@ class clsReconstruction(object):
 
 
 
-
+	#==========================================================
 	@staticmethod
 	def bundleAdjustmentwithK(Str_4D, Xp_1, Xp_2, k, R, t):
 		#Camera.myCamera.show3Dplot(Xp_3D)
@@ -239,7 +249,7 @@ class clsReconstruction(object):
 
 
 
-
+	#==========================================================
 	@staticmethod
 	def bundleAdjustmentwithX(Str_4D, Xp_1, Xp_2, k, R, t):
 
@@ -264,6 +274,7 @@ class clsReconstruction(object):
 
 
 
+	#==========================================================
 	@staticmethod
 	def bundleAdjustment(Str_4D, Xp_1, Xp_2, k, R, t):
 		#Camera.myCamera.show3Dplot(Xp_3D)
@@ -286,6 +297,7 @@ class clsReconstruction(object):
 
 
 
+	#==========================================================
 	@staticmethod
 	def reProjectResidualwithK(nx, *args):
 		
@@ -321,6 +333,7 @@ class clsReconstruction(object):
 		return nRes
 
 
+	#==========================================================
 	@staticmethod
 	def reProjectResidualwithX(nx, *args):
 		
@@ -356,6 +369,9 @@ class clsReconstruction(object):
 
 		return nRes
 
+
+
+	#==========================================================
 	@staticmethod
 	def reProjectResidual(x, *args):
 							
@@ -386,6 +402,7 @@ class clsReconstruction(object):
 		return nRes
 
 
+	#==========================================================
 	def drawlines(img1,img2,lines,pts1,pts2):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
@@ -403,16 +420,18 @@ class clsReconstruction(object):
 			img2 = cv2.circle(img2,tuple((int(pt2[0]),int(pt2[1]))),5,color,-1)
 		return img1,img2
 	
-		
+
+	#==========================================================		
 	@staticmethod	
 	def drawPoints(img1,pts1,color):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
 		for pt1 in pts1:
-			img1 = cv2.circle(img1,(int(pt1[0,0]), int(pt1[0,1])),4,color,2,1)
+			img1 = cv2.circle(img1,(int(pt1[0]), int(pt1[1])),4,color,2,1)
 		return img1			
 		
-	#=======================================
+
+	#==========================================================
 	def doSubPlot(plt, position, img, color_argument, title):
 		try:
 			plt.subplot(position),plt.imshow(cv2.cvtColor(img, color_argument)),plt.title(title)
