@@ -6,6 +6,10 @@ from scipy.optimize import minimize, rosen, rosen_der
 from Reconstruction import *
 import Camera
 
+import DenseMatching
+
+
+
 
 
 """3D RECONSTRUCTION.
@@ -63,6 +67,14 @@ LIBRARIES VERSION USED LIBS:
 
 
 
-clsReconstruction.sparceRecostructionTrueCase('b4.jpg','b5.jpg','k_cam_hp.dat')
+#im = cv2.imread('b21.jpg',0)
+#k = DenseMatching.clsDenseMatching.ReliableArea(im)
+#cv2.imshow('t',k)
+#cv2.waitKey(0)
 
-#clsReconstruction.NewMatching('b4.jpg','b5.jpg','k_cam_hp.dat')
+#im = cv2.imread('b4.jpg',0)
+
+i = 1
+
+clsReconstruction.sparceRecostructionTrueCase('b21.jpg','b22.jpg','k_cam_hp.dat')
+

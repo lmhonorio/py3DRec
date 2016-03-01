@@ -56,12 +56,12 @@ class clsReconstruction(object):
 		#for different features, see 
 		#http://docs.opencv.org/3.0-beta/modules/features2d/doc/feature_detection_and_description.html
 		
-		detector = cv2.AKAZE_create()
+		#detector = cv2.AKAZE_create()
 
 		#detector = cv2.BRISK_create()  
 
 
-		#detector = cv2.ORB_create()
+		detector = cv2.ORB_create()
 
 
 		kp_1, des_1 = detector.detectAndCompute(im_1,None) 
@@ -108,6 +108,10 @@ class clsReconstruction(object):
 	def sparceRecostructionTrueCase(file1,file2,kdef):
 
 		k = np.mat(clsReconstruction.loadData(kdef))
+
+		k[0,2] = 0
+		k[1,2] = 0
+
 		ki = np.linalg.inv(k)
 
 		im_1 = cv2.imread(file1)
@@ -125,7 +129,7 @@ class clsReconstruction(object):
 
 
 		#return macthing points
-		Xp_1, Xp_2 = clsReconstruction.getMatchingPoints(file1,file2,kdef,30)
+		Xp_1, Xp_2 = clsReconstruction.getMatchingPoints(file1,file2,kdef,40)
 
 
 		#evaluate the essential Matrix using the camera parameter(using the original points)
@@ -157,8 +161,8 @@ class clsReconstruction(object):
 
 
 		#evaluate reprojection
-		Xh_Reprojection_1 = myC1.project(Str_4D)
-		Xh_Reprojection_2 = myC2.project(Str_4D)
+		Xh_reprojection_1 = myC1.project(Str_4D)
+		Xh_reprojection_2 = myC2.project(Str_4D)
 
 
 		#three ways to carry on the bundle adjustment I am using R,t and K as parameters. using the points is too time 
@@ -196,15 +200,19 @@ class clsReconstruction(object):
 
 
 		#POSSIBLE IMPLEMENTATION find residuals bigger a threshould value and optimize their location in R3
+		#evaluate 
+
+
+
 
 		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,nF,im_b1,im_b2)
 
 		im = clsReconstruction.drawPoints(im_1,Xp_1,(50,50,250))
-		im = clsReconstruction.drawPoints(im,Xh_Reprojection_1,(50,150,100))
+		im = clsReconstruction.drawPoints(im,Xh_reprojection_1,(50,150,100))
 		im = clsReconstruction.drawPoints(im,Xh_Opt_1,(250,250,50))
 
 		im2 = clsReconstruction.drawPoints(im_2,Xp_2,(50,50,250))
-		im2 = clsReconstruction.drawPoints(im2,Xh_Reprojection_2,(50,150,100))
+		im2 = clsReconstruction.drawPoints(im2,Xh_reprojection_2,(50,150,100))
 		im2 = clsReconstruction.drawPoints(im2,Xh_Opt_2,(250,250,50))
 
 

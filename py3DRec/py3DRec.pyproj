@@ -27,6 +27,9 @@
     <Compile Include="Camera.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DenseMatching.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="py3DRec.py" />
     <Compile Include="Reconstruction.py">
       <SubType>Code</SubType>
