@@ -56,12 +56,12 @@ class clsReconstruction(object):
 		#for different features, see 
 		#http://docs.opencv.org/3.0-beta/modules/features2d/doc/feature_detection_and_description.html
 		
-		#detector = cv2.AKAZE_create()
+		detector = cv2.AKAZE_create()
 
 		#detector = cv2.BRISK_create()  
 
 
-		detector = cv2.ORB_create()
+		#detector = cv2.ORB_create()
 
 
 		kp_1, des_1 = detector.detectAndCompute(im_1,None) 
@@ -109,8 +109,8 @@ class clsReconstruction(object):
 
 		k = np.mat(clsReconstruction.loadData(kdef))
 
-		k[0,2] = 0
-		k[1,2] = 0
+		#k[0,2] = 0
+		#k[1,2] = 0
 
 		ki = np.linalg.inv(k)
 
