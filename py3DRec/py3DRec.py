@@ -78,8 +78,8 @@ i = 1
 
 #Xp_1, Xp_2, Str_4D = clsReconstruction.sparceRecostructionTrueCase('a8.jpg','a9.jpg','k_cam_hp.dat')
 
-im_1 = cv2.imread('a8.jpg',0)
-im_2 = cv2.imread('a9.jpg',0)
+im_1 = cv2.imread('b21.jpg',0)
+im_2 = cv2.imread('b22.jpg',0)
 
 im_1 = cv2.resize(im_1,(640,360))
 im_2 = cv2.resize(im_2,(640,360))
@@ -95,17 +95,17 @@ zncc_2 = DenseMatching.clsDenseMatching.returnZncc(im_2,half_size_window)
 matchable_im_1 = DenseMatching.clsDenseMatching.ReliableArea(im_1)
 matchable_im_2 = DenseMatching.clsDenseMatching.ReliableArea(im_2)
 
-plt.imshow(matchable_im_1)
-plt.show()
-plt.imshow(matchable_im_2)
-plt.show()
+#plt.imshow(matchable_im_1)
+#plt.show()
+#plt.imshow(matchable_im_2)
+#plt.show()
 
 matches, aa, bb = DenseMatching.clsDenseMatching.propagate(Xp_1, Xp_2, im_1, im_2, matchable_im_1, matchable_im_2, zncc_1, zncc_2, half_size_window, CostMax = 0.5)
 
 
 xp_1 = np.vstack((matches[:,0],matches[:,1])).T
 
-xp_2 = np.vstack((matches[:,1],matches[:,2])).T
+xp_2 = np.vstack((matches[:,2],matches[:,3])).T
 
 im1 = clsReconstruction.drawPoints(im_1,xp_1,(250,50,50))
 im2 = clsReconstruction.drawPoints(im_2,xp_2,(250,50,50))

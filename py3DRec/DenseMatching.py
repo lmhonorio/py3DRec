@@ -131,18 +131,16 @@ class clsDenseMatching(object):
 					yy0 = local_heap[bestIndex][1]
 					xx1 = local_heap[bestIndex][2]
 					yy1 = local_heap[bestIndex][3]
-					match_pair = np.vstack((match_pair,local_heap[bestIndex]))
-					match_pair_size = len(match_pair) -1 
-					heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
-					maxMatchingNumber = maxMatchingNumber - 1
-					#if (match_im_1[yy0,xx0,0] < 0 and match_im_1[yy0,xx0,1] < 0 and match_im_2[yy1,xx1,0] < 0 and match_im_2[yy1,xx1,1] < 0):
-					#	match_im_1[yy0,xx0,:] = [yy0,yy0]
-					#	match_im_2[yy1,xx1,:] = [xx1,yy1]
-					#	match_pair = np.vstack((match_pair,local_heap[bestIndex]))
-					#	match_pair_size = len(match_pair) -1 
-					#	heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
 
-					#	maxMatchingNumber = maxMatchingNumber - 1
+					
+					if (match_im_1[yy0,xx0,0] < 0 and match_im_1[yy0,xx0,1] < 0 and match_im_2[yy1,xx1,0] < 0 and match_im_2[yy1,xx1,1] < 0):
+						match_im_1[yy0,xx0,:] = [yy0,yy0]
+						match_im_2[yy1,xx1,:] = [xx1,yy1]
+						match_pair = np.vstack((match_pair,local_heap[bestIndex]))
+						match_pair_size = len(match_pair) -1 
+						heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
+						
+						maxMatchingNumber = maxMatchingNumber - 1
 
 
 
