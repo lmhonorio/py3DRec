@@ -95,6 +95,11 @@ zncc_2 = DenseMatching.clsDenseMatching.returnZncc(im_2,half_size_window)
 matchable_im_1 = DenseMatching.clsDenseMatching.ReliableArea(im_1)
 matchable_im_2 = DenseMatching.clsDenseMatching.ReliableArea(im_2)
 
+plt.imshow(matchable_im_1)
+plt.show()
+plt.imshow(matchable_im_2)
+plt.show()
+
 matches, aa, bb = DenseMatching.clsDenseMatching.propagate(Xp_1, Xp_2, im_1, im_2, matchable_im_1, matchable_im_2, zncc_1, zncc_2, half_size_window, CostMax = 0.5)
 
 

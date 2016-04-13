@@ -131,14 +131,18 @@ class clsDenseMatching(object):
 					yy0 = local_heap[bestIndex][1]
 					xx1 = local_heap[bestIndex][2]
 					yy1 = local_heap[bestIndex][3]
-					if (match_im_1[yy0,xx0,0] < 0 and match_im_1[yy0,xx0,1] < 0 and match_im_2[yy1,xx1,0] < 0 and match_im_2[yy1,xx1,1] < 0):
-						match_im_1[yy0,xx0,:] = [yy0,yy0]
-						match_im_2[yy1,xx1,:] = [xx1,yy1]
-						match_pair = np.vstack((match_pair,local_heap[bestIndex]))
-						match_pair_size = len(match_pair) - 1
-						heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
+					match_pair = np.vstack((match_pair,local_heap[bestIndex]))
+					match_pair_size = len(match_pair) -1 
+					heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
+					maxMatchingNumber = maxMatchingNumber - 1
+					#if (match_im_1[yy0,xx0,0] < 0 and match_im_1[yy0,xx0,1] < 0 and match_im_2[yy1,xx1,0] < 0 and match_im_2[yy1,xx1,1] < 0):
+					#	match_im_1[yy0,xx0,:] = [yy0,yy0]
+					#	match_im_2[yy1,xx1,:] = [xx1,yy1]
+					#	match_pair = np.vstack((match_pair,local_heap[bestIndex]))
+					#	match_pair_size = len(match_pair) -1 
+					#	heappush(heap,(-local_heap[bestIndex][4],match_pair_size))
 
-						maxMatchingNumber = maxMatchingNumber - 1
+					#	maxMatchingNumber = maxMatchingNumber - 1
 
 
 
@@ -166,7 +170,7 @@ class clsDenseMatching(object):
 
 
 		pass
-
+		     
 
 	@staticmethod
 	def returnZncc(im, half_size_window):
@@ -178,7 +182,7 @@ class clsDenseMatching(object):
 		d0 = im.shape[0]  
 		d1 = im.shape[1]  
 
-		k = 0
+		k = 000
 
 		for x in range(0,2*hsw+1):
 			for y in range (0,2*hsw+1):
@@ -188,7 +192,6 @@ class clsDenseMatching(object):
 
 		
 		zncc_mean = np.mean(zncc,axis = 2)
-
 
 
 		sum_deviation = 0
