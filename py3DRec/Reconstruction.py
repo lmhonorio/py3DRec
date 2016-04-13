@@ -56,12 +56,12 @@ class clsReconstruction(object):
 		#for different features, see 
 		#http://docs.opencv.org/3.0-beta/modules/features2d/doc/feature_detection_and_description.html
 		
-		detector = cv2.AKAZE_create()
+		#detector = cv2.AKAZE_create()
 
 		#detector = cv2.BRISK_create()  
 
 
-		#detector = cv2.ORB_create()
+		detector = cv2.ORB_create()
 
 
 		kp_1, des_1 = detector.detectAndCompute(im_1,None) 
@@ -83,10 +83,10 @@ class clsReconstruction(object):
 	
 		matches = matches[0:npoints]
 
-		#draw_params = dict(matchColor = (20,20,20), singlePointColor = (250,250,250),
-		#			matchesMask = None,
-		#			flags = 0)
-		#im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
+		draw_params = dict(matchColor = (250,20,250), singlePointColor = (20,250,20),
+					matchesMask = None,
+					flags = 0)
+		im_3 = cv2.drawMatches(im_1,kp_1,im_2,kp_2,matches[0:npoints], None, **draw_params)
 		#plt.imshow(im_3)
 		#plt.show()
 
@@ -97,7 +97,7 @@ class clsReconstruction(object):
 		for i in idx:
 			pts1.append(kp_1[i.queryIdx].pt)
 			pts2.append(kp_2[i.trainIdx].pt)
-
+					
 		return np.array(pts1), np.array(pts2)
 
 
@@ -117,8 +117,12 @@ class clsReconstruction(object):
 		im_1 = cv2.imread(file1)
 		im_2 = cv2.imread(file2)
 
+		im_1 = cv2.resize(im_1,(640,360))
+		im_2 = cv2.resize(im_2,(640,360))
+
 		im_b1 = cv2.cvtColor(im_1,cv2.COLOR_RGB2GRAY)
 		im_b2 = cv2.cvtColor(im_2,cv2.COLOR_RGB2GRAY)
+
 
 		myC1 = Camera.myCamera(k)
 		myC2 = Camera.myCamera(k)
@@ -129,7 +133,8 @@ class clsReconstruction(object):
 
 
 		#return macthing points
-		Xp_1, Xp_2 = clsReconstruction.getMatchingPoints(file1,file2,kdef,40)
+		#Xp_1, Xp_2 = clsReconstruction.getMatchingPoints(file1,file2,kdef,40)
+		Xp_1, Xp_2 = clsReconstruction.getMatchingPointsFromObjects(im_b1,im_b2,kdef,20)
 
 
 		#evaluate the essential Matrix using the camera parameter(using the original points)
@@ -185,18 +190,18 @@ class clsReconstruction(object):
 		myC2 = Camera.myCamera(nk)
 		myC1.projectiveMatrix(np.mat([0,0,0]).transpose(),[0, 0, 0])
 
-
+		Str_4D = 0
 
 		#reevaluate all variables based on new values of nR and nt
-		myC2.projectiveMatrix(np.mat(nt),nR)
-		Str_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
-		Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
+		#myC2.projectiveMatrix(np.mat(nt),nR)
+		#Str_4D = cv2.triangulatePoints(myC1.P[:3],myC2.P[:3],Xp_1.transpose()[:2],Xp_2.transpose()[:2]).T
+		#Str_3D = cv2.convertPointsFromHomogeneous(Str_4D).reshape(-1,3)
 
 
 		
 		#Camera.myCamera.show3Dplot(Str_3D)
-		Xh_Opt_1 = myC1.project(Str_4D)#.reshape(-1,2)
-		Xh_Opt_2 = myC2.project(Str_4D)#.reshape(-1,2)
+		#Xh_Opt_1 = myC1.project(Str_4D)#.reshape(-1,2)
+		#Xh_Opt_2 = myC2.project(Str_4D)#.reshape(-1,2)
 
 
 		#POSSIBLE IMPLEMENTATION find residuals bigger a threshould value and optimize their location in R3
@@ -204,23 +209,30 @@ class clsReconstruction(object):
 
 
 
+		#im_b1 = cv2.cvtColor(im_b1,cv2.COLOR_GRAY2BGR)
+		#im_b2 = cv2.cvtColor(im_b2,cv2.COLOR_GRAY2BGR)
 
 		#clsReconstruction.drawEpipolarLines(Xp_1,Xp_2,nF,im_b1,im_b2)
+										
+		#im = clsReconstruction.drawPoints(im_b1,Xp_1,(250,50,50))
+		#im = clsReconstruction.drawPoints(im,Xh_reprojection_1,(100,150,50))
+		#im = clsReconstruction.drawPoints(im,Xh_Opt_1,(50,250,250))
 
-		im = clsReconstruction.drawPoints(im_1,Xp_1,(50,50,250))
-		im = clsReconstruction.drawPoints(im,Xh_reprojection_1,(50,150,100))
-		im = clsReconstruction.drawPoints(im,Xh_Opt_1,(250,250,50))
-
-		im2 = clsReconstruction.drawPoints(im_2,Xp_2,(50,50,250))
-		im2 = clsReconstruction.drawPoints(im2,Xh_reprojection_2,(50,150,100))
-		im2 = clsReconstruction.drawPoints(im2,Xh_Opt_2,(250,250,50))
-
-
-		cv2.imshow("im",im)
-		cv2.imshow("im2",im2)
-		cv2.waitKey(0)
+		#im2 = clsReconstruction.drawPoints(im_b2,Xp_2,(250,50,50))
+		#im2 = clsReconstruction.drawPoints(im2,Xh_reprojection_2,(100,150,50))
+		#im2 = clsReconstruction.drawPoints(im2,Xh_Opt_2,(50,250,250))
 
 
+		#plt.subplot(121),plt.imshow(im)
+		#plt.subplot(122),plt.imshow(im2)
+		#plt.show()
+
+		#cv2.imshow("im",im)
+		#cv2.imshow("im2",im2)
+		#cv2.waitKey(0)
+
+
+		return Xp_1, Xp_2, Str_4D 
 
 	#==========================================================
 	@staticmethod
