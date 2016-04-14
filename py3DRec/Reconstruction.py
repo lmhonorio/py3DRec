@@ -447,7 +447,7 @@ class clsReconstruction(object):
 		''' img1 - image on which we draw the epilines for the points in img2
 		lines - corresponding epilines '''
 		for pt1 in pts1:
-			img1 = cv2.circle(img1,(int(pt1[0]), int(pt1[1])),4,color,2,1)
+			img1 = cv2.circle(img1,(int(pt1[0]), int(pt1[1])),1,color,1,1)
 		return img1			
 		
 

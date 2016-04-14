@@ -62,6 +62,15 @@ LIBRARIES VERSION USED LIBS:
 
 """
 
+
+
+
+		#aa = reliable.astype(dtype=np.uint8)
+		#bb = cv2.cvtColor(aa,cv2.COLOR_GRAY2RGB)
+		#plt.imshow(bb)
+
+
+
 #x0 = [1.3, 0.7, 0.8, 1.9, 1.2]
 #res = minimize(rosen, x0, method='Nelder-Mead', tol=1e-6)
 
@@ -81,24 +90,32 @@ i = 1
 im_1 = cv2.imread('b21.jpg',0)
 im_2 = cv2.imread('b22.jpg',0)
 
-im_1 = cv2.resize(im_1,(640,360))
-im_2 = cv2.resize(im_2,(640,360))
+#im_1 = cv2.resize(im_1,(640,480))
+#im_2 = cv2.resize(im_2,(640,480))
 
 kdef = clsReconstruction.loadData('k_cam_hp.dat')
 Xp_1, Xp_2 = clsReconstruction.getMatchingPointsFromObjects(im_1,im_2,kdef,20)
  
-half_size_window = 1
+half_size_window = 2
 
-zncc_1 = DenseMatching.clsDenseMatching.returnZncc(im_1,half_size_window)
-zncc_2 = DenseMatching.clsDenseMatching.returnZncc(im_2,half_size_window)
+zncc_1,matchable_im_1 = DenseMatching.clsDenseMatching.returnZncc(im_1,half_size_window)
+zncc_2,matchable_im_2 = DenseMatching.clsDenseMatching.returnZncc(im_2,half_size_window)
 
-matchable_im_1 = DenseMatching.clsDenseMatching.ReliableArea(im_1)
-matchable_im_2 = DenseMatching.clsDenseMatching.ReliableArea(im_2)
+#matchable_im_1 = DenseMatching.clsDenseMatching.ReliableArea(im_1)
+#matchable_im_2 = DenseMatching.clsDenseMatching.ReliableArea(im_2)
 
 #plt.imshow(matchable_im_1)
 #plt.show()
 #plt.imshow(matchable_im_2)
 #plt.show()
+aa = zncc_1[:,:,0]
+aa = (aa + 1)*(255/2)
+aa = aa.astype(dtype=np.uint8)
+bb = cv2.cvtColor(aa,cv2.COLOR_GRAY2RGB)
+
+
+aa0 = matchable_im_1.astype(dtype=np.uint8)*255
+bb0 = cv2.cvtColor(aa0,cv2.COLOR_GRAY2RGB)
 
 matches, aa, bb = DenseMatching.clsDenseMatching.propagate(Xp_1, Xp_2, im_1, im_2, matchable_im_1, matchable_im_2, zncc_1, zncc_2, half_size_window, CostMax = 0.5)
 

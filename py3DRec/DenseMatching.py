@@ -177,9 +177,10 @@ class clsDenseMatching(object):
 
 		zncc = np.zeros(( im.shape[0] - 2 * hsw,  im.shape[1] - 2 * hsw,  (2 * hsw + 1)**2))
 		nzncc = np.zeros(( im.shape[0] ,  im.shape[1] ,  (2 * hsw + 1)**2))
+		reliable = np.zeros(( im.shape[0] ,  im.shape[1] ))
 		d0 = im.shape[0]  
 		d1 = im.shape[1]  
-
+		dimension = (2 * hsw + 1)**2
 		k = 000
 
 		for x in range(0,2*hsw+1):
@@ -188,15 +189,20 @@ class clsDenseMatching(object):
 				zncc[:,:,k] = zncc[:,:,k]/256 
 				k = k + 1
 
+		reliable[hsw:d0-hsw,hsw:d1-hsw] = (np.max(zncc,axis=2) - zncc[:,:,int(dimension/2)]) 
+		reliable = ( reliable > 0.01)
+		reliable = reliable.astype(dtype=np.double)
 		
 		zncc_mean = np.mean(zncc,axis = 2)
 
 
-		sum_deviation = 0
+		sum_deviation = 0.0000000001
 		for i in range(0,(2 * hsw + 1)**2):
 			sum_deviation = sum_deviation + np.array((zncc[:,:,i] - zncc_mean))*np.array((zncc[:,:,i] - zncc_mean))
 
 		sum_deviation = np.sqrt(sum_deviation)
+
+
 
 		for i in range(0,(2 * hsw + 1)**2):
 			zncc[:,:,i] = np.array((zncc[:,:,i] - zncc_mean)) / np.array(sum_deviation)
@@ -204,7 +210,7 @@ class clsDenseMatching(object):
 
 			
 			
-		return nzncc
+		return nzncc, reliable
 		
 
 	@staticmethod
